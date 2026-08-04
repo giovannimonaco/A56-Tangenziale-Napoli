@@ -35,10 +35,14 @@ nonisolated enum AutostradeRealtimeClosureMapper {
         from events: [AutostradeEvent],
         now: Date = .now
     ) -> MappingReport {
-        let relevant = events.filter {
-            $0.cStr == AutostradeClosureMapper.roadCode
-                && $0.cGrpTip == "C"
-                && eventKind($0) != nil
+        let a56 = events.filter { $0.cStr == AutostradeClosureMapper.roadCode }
+        let relevant = a56.filter {
+            $0.cGrpTip == "C"
+                && AutostradeClosureMapper.eventKind($0) != nil
+                && (endDate($0).map { $0 > now } ?? true)
+        }
+        let unrecognized = a56.filter {
+            AutostradeClosureMapper.isUnrecognizedClosureType($0)
                 && (endDate($0).map { $0 > now } ?? true)
         }
 
@@ -55,21 +59,17 @@ nonisolated enum AutostradeRealtimeClosureMapper {
             if let mapped = closure(from: event, now: now), !hasConflict {
                 closures.append(mapped)
             } else {
-                issues.append(
-                    .init(
-                        eventID: event.cEle ?? "senza-id",
-                        type: event.tDesFraIt ?? "tipo sconosciuto",
-                        primaryLocation: event.locpri ?? "",
-                        secondaryLocation: event.locsec ?? "",
-                        occurrenceCount: 1
-                    )
-                )
+                issues.append(issue(for: event))
             }
         }
+        for event in unrecognized {
+            issues.append(issue(for: event))
+        }
+
         closures.sort { $0.start < $1.start }
         let report = MappingReport(
             closures: closures,
-            expectedEvents: relevant.count,
+            expectedEvents: relevant.count + unrecognized.count,
             mappedEvents: closures.count,
             issues: issues
         )
@@ -80,22 +80,17 @@ nonisolated enum AutostradeRealtimeClosureMapper {
         return report
     }
 
-    private enum EventKind {
-        case segment
-        case ramp(ClosureRampImpact.Kind)
-    }
-
     private static func closure(
         from event: AutostradeEvent,
         now: Date
     ) -> RoadClosure? {
-        guard let kind = eventKind(event),
+        guard let kind = AutostradeClosureMapper.eventKind(event),
               let end = endDate(event),
               end > now
         else { return nil }
 
-        let bothDirections = isBothDirections(event)
-        let direction = primaryDirection(event)
+        let bothDirections = AutostradeClosureMapper.isBothDirections(event)
+        let direction = AutostradeClosureMapper.primaryDirection(event)
         let fromExit: Int
         let toExit: Int
         let rampImpacts: [ClosureRampImpact]
@@ -103,7 +98,9 @@ nonisolated enum AutostradeRealtimeClosureMapper {
 
         switch kind {
         case .segment:
-            let noticeExits = segmentExits(from: event.tDesIt ?? "")
+            // Fallback for the occasional live row whose location fields are
+            // incomplete: "Tratto Chiuso tra Agnano e Cuma fino alle …".
+            let noticeExits = NoticeText.segmentEndpoints(in: event.tDesIt ?? "")
             guard let first = A56Line.resolveExit(
                 pointID: event.cPntDtxPlsPri,
                 named: event.locpri
@@ -130,8 +127,15 @@ nonisolated enum AutostradeRealtimeClosureMapper {
             isFullClosure = false
         }
 
+        let suggestions = NoticeText.suggestions(in: event.tDesIt ?? "")
         return RoadClosure(
-            id: event.cEle ?? UUID().uuidString,
+            id: event.cEle ?? fallbackID(
+                kind: kind,
+                fromExit: fromExit,
+                toExit: toExit,
+                direction: direction,
+                end: end
+            ),
             start: activationDate(event, now: now),
             end: end,
             direction: direction,
@@ -140,33 +144,57 @@ nonisolated enum AutostradeRealtimeClosureMapper {
             toExit: toExit,
             rampImpacts: rampImpacts,
             reason: nonEmpty(event.tDesFraCauIt) ?? "Lavori",
-            suggestedAlternatives: parseAlternatives(from: event.tDesIt ?? ""),
+            suggestedAlternatives: suggestions.map(\.exitNumber),
+            alternativeSuggestions: suggestions,
             isFullClosure: isFullClosure,
             sourceText: event.tDesIt ?? "",
             evidence: .realtime
         )
     }
 
-    private static func eventKind(_ event: AutostradeEvent) -> EventKind? {
-        let type = A56Line.normalize(event.tDesFraIt ?? "")
-        if type.contains("tratto chiuso") { return .segment }
-        if type.contains("entrata chiusa") { return .ramp(.entrance) }
-        if type.contains("uscita chiusa") { return .ramp(.exit) }
-        return nil
+    private static func issue(for event: AutostradeEvent) -> AutostradeClosureMapper.MappingIssue {
+        .init(
+            eventID: event.cEle ?? "senza-id",
+            type: event.tDesFraIt ?? "tipo sconosciuto",
+            primaryLocation: event.locpri ?? "",
+            secondaryLocation: event.locsec ?? "",
+            occurrenceCount: 1
+        )
     }
 
-    private static func isBothDirections(_ event: AutostradeEvent) -> Bool {
-        event.cDir == "B" || A56Line.normalize(event.tDesDirIt ?? "").contains("entrambe")
+    /// Content-derived id for the rare row without `c_ele`. A random value
+    /// here would re-archive the same closure on every fetch.
+    private static func fallbackID(
+        kind: AutostradeClosureMapper.EventKind,
+        fromExit: Int,
+        toExit: Int,
+        direction: Direction,
+        end: Date
+    ) -> String {
+        let kindKey = { if case .segment = kind { return "seg" } else { return "ramp" } }()
+        return "live_\(kindKey)_\(fromExit)-\(toExit)_\(direction.rawValue)_\(Int(end.timeIntervalSince1970))"
     }
 
-    private static func primaryDirection(_ event: AutostradeEvent) -> Direction {
-        let text = A56Line.normalize(event.tDesDirIt ?? "")
-        if text.contains("capodichino") { return .towardCapodichino }
-        if text.contains("pozzuoli") { return .towardPozzuoli }
-        return event.cDir == "P" ? .towardCapodichino : .towardPozzuoli
-    }
+    // MARK: - Dates
 
+    /// When the closure started. `d_agg` moves forward on every editorial
+    /// update of the row, so prefer the creation day encoded in `c_ele`
+    /// combined with the "dalle ore HH:MM" time from the notice, when present.
     private static func activationDate(_ event: AutostradeEvent, now: Date) -> Date {
+        if let raw = event.cEle, raw.count >= 8,
+           let creationDay = creationDayFormatter.date(from: String(raw.prefix(8))),
+           let time = NoticeText.startTime(in: event.tDesIt ?? "") {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(identifier: "Europe/Rome") ?? .current
+            if let composed = calendar.date(
+                bySettingHour: time.hour,
+                minute: time.minute,
+                second: 0,
+                of: creationDay
+            ) {
+                return min(composed, now)
+            }
+        }
         guard let milliseconds = event.dAgg else { return now }
         return min(Date(timeIntervalSince1970: milliseconds / 1000), now)
     }
@@ -174,105 +202,33 @@ nonisolated enum AutostradeRealtimeClosureMapper {
     /// `fino_al` stores a 12-digit UTC timestamp followed by the local offset,
     /// for example 04:00 UTC +02 for the driver-facing 06:00 in Naples.
     private static func endDate(_ event: AutostradeEvent) -> Date? {
-        if let raw = event.finoAl {
-            let timestamp = String(raw.prefix(12))
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.calendar = Calendar(identifier: .gregorian)
-            formatter.timeZone = TimeZone(secondsFromGMT: 0)
-            formatter.dateFormat = "yyyyMMddHHmm"
-            if let parsed = formatter.date(from: timestamp) { return parsed }
+        if let raw = event.finoAl,
+           let parsed = finoAlFormatter.date(from: String(raw.prefix(12))) {
+            return parsed
         }
-        return parseEndFromNotice(event.tDesIt ?? "")
+        return NoticeText.endDate(in: event.tDesIt ?? "")
     }
 
-    private static func parseEndFromNotice(_ text: String) -> Date? {
-        guard let expression = try? NSRegularExpression(
-            pattern: "fino alle\\s+(\\d{1,2}):(\\d{2})\\s+del\\s+(\\d{2})/(\\d{2})/(\\d{4})",
-            options: [.caseInsensitive]
-        ) else { return nil }
+    /// Formatters are expensive to build, and the mapper runs on every row of
+    /// every refresh. `DateFormatter` is documented thread-safe for parsing
+    /// since iOS 7, so sharing these across calls is fine.
+    private static let finoAlFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyyMMddHHmm"
+        return formatter
+    }()
 
-        let nsText = text as NSString
-        guard let match = expression.firstMatch(
-            in: text,
-            range: NSRange(location: 0, length: nsText.length)
-        ), match.numberOfRanges == 6 else { return nil }
-
-        let values = (1...5).compactMap { Int(nsText.substring(with: match.range(at: $0))) }
-        guard values.count == 5 else { return nil }
-        var components = DateComponents()
-        components.hour = values[0]
-        components.minute = values[1]
-        components.day = values[2]
-        components.month = values[3]
-        components.year = values[4]
-        components.timeZone = TimeZone(identifier: "Europe/Rome")
-        return Calendar(identifier: .gregorian).date(from: components)
-    }
-
-    /// Fallback for the occasional live row whose `locpri`/`locsec` fields are
-    /// incomplete: "Tratto Chiuso tra Agnano e Cuma fino alle …".
-    private static func segmentExits(from text: String) -> (Int, Int)? {
-        guard let expression = try? NSRegularExpression(
-            pattern: "tratto chiuso tra\\s+(.+?)\\s+e\\s+(.+?)\\s+fino alle",
-            options: [.caseInsensitive]
-        ) else { return nil }
-
-        let nsText = text as NSString
-        guard let match = expression.firstMatch(
-            in: text,
-            range: NSRange(location: 0, length: nsText.length)
-        ), match.numberOfRanges == 3,
-              let first = A56Line.resolveExit(named: nsText.substring(with: match.range(at: 1))),
-              let second = A56Line.resolveExit(named: nsText.substring(with: match.range(at: 2)))
-        else { return nil }
-        return (first, second)
-    }
-
-    private static func parseAlternatives(from text: String) -> [Int] {
-        guard !text.isEmpty,
-              let expression = try? NSRegularExpression(
-                pattern: "consigliat[ao][^:]*:\\s*([^.;\\n]+)",
-                options: [.caseInsensitive]
-              )
-        else { return [] }
-
-        let nsText = text as NSString
-        var exits: [Int] = []
-        expression.enumerateMatches(
-            in: text,
-            range: NSRange(location: 0, length: nsText.length)
-        ) { match, _, _ in
-            guard let match, match.numberOfRanges > 1 else { return }
-            let name = nsText.substring(with: match.range(at: 1))
-            if let exit = A56Line.resolveExit(named: name), !exits.contains(exit) {
-                exits.append(exit)
-            }
-        }
-        return exits
-    }
-
-    static func sameOccurrence(_ lhs: RoadClosure, _ rhs: RoadClosure) -> Bool {
-        guard lhs.kind == rhs.kind,
-              lhs.lowerExit == rhs.lowerExit,
-              lhs.upperExit == rhs.upperExit,
-              sameRampImpact(lhs, rhs),
-              lhs.affectsBothDirections == rhs.affectsBothDirections,
-              lhs.affectsBothDirections || lhs.direction == rhs.direction
-        else { return false }
-        return lhs.start < rhs.end && rhs.start < lhs.end
-    }
-
-    private static func sameRampImpact(_ lhs: RoadClosure, _ rhs: RoadClosure) -> Bool {
-        guard lhs.kind == .rampsClosed else { return true }
-        let lhsSignature = Set(lhs.closedRamps.map {
-            "\($0.exitNumber)#\($0.kind.rawValue)"
-        })
-        let rhsSignature = Set(rhs.closedRamps.map {
-            "\($0.exitNumber)#\($0.kind.rawValue)"
-        })
-        return lhsSignature == rhsSignature
-    }
+    private static let creationDayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "Europe/Rome")
+        formatter.dateFormat = "yyyyMMdd"
+        return formatter
+    }()
 
     private static func nonEmpty(_ value: String?) -> String? {
         guard let value, !value.isEmpty else { return nil }

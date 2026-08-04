@@ -19,28 +19,35 @@ final class ClosuresViewModel {
         case cache(Date)    // last good response, network unavailable
         case unavailable    // no trustworthy live or cached response
 
-        var statusText: String {
-            switch self {
-            case .live(let date, let quality):
-                if quality.isFullyVerified {
-                    "Controllo completo \(quality.mappedRecords)/\(quality.expectedRecords) · \(date.formatted(date: .omitted, time: .shortened))"
-                } else if quality.mappingIsComplete {
-                    "Controllo parziale · una fonte non disponibile · \(date.formatted(date: .omitted, time: .shortened))"
-                } else {
-                    "Attenzione: letti \(quality.mappedRecords)/\(quality.expectedRecords) dati ufficiali"
-                }
-            case .cache(let date):
-                "Dati non aggiornati · ultimo \(date.formatted(date: .abbreviated, time: .shortened))"
-            case .unavailable:
-                "Dati non disponibili · verifica i canali del gestore"
-            }
-        }
-
         var isStale: Bool {
             switch self {
             case .live(_, let quality): !quality.isFullyVerified
             case .cache, .unavailable: true
             }
+        }
+    }
+
+    /// The one distinction the status line communicates. `partial` means the
+    /// refresh DID succeed but one feed or some rows could not be read; it
+    /// must not look like the offline `cache` state, or users will retry a
+    /// refresh that already worked.
+    enum Freshness: Equatable {
+        case fresh(Date)
+        case partial(Date)
+        case cache(Date)
+        case unavailable
+    }
+
+    var freshness: Freshness? {
+        switch dataSource {
+        case .live(let date, let quality):
+            quality.isFullyVerified ? .fresh(date) : .partial(date)
+        case .cache(let date):
+            .cache(date)
+        case .unavailable:
+            .unavailable
+        case nil:
+            nil
         }
     }
 
@@ -95,10 +102,11 @@ final class ClosuresViewModel {
             // (which retains closures we saw while they were still upcoming),
             // not just this fetch — otherwise an active overnight closure checked
             // after midnight would show nothing.
-            archivedClosures = archive.record(
+            archivedClosures = await archive.record(
                 result.closures,
                 now: timestamp,
-                canInferCancellations: result.canInferCancellations
+                canInferCancellations: result.canInferCancellations,
+                canRevalidateActive: result.canRevalidateActive
             )
             closures = archivedClosures
             dataSource = .live(
@@ -123,7 +131,7 @@ final class ClosuresViewModel {
         }
 
         // 2. Fall back to the accumulated on-device archive (last good data).
-        if let stored = archive.load() {
+        if let stored = await archive.load() {
             closures = stored.closures.sorted { $0.start < $1.start }
             archivedClosures = stored.closures
             dataSource = .cache(stored.lastFetchedAt)
@@ -140,29 +148,37 @@ final class ClosuresViewModel {
 
     /// Detailed per-closure dump (deduplicated by event) — for debugging which
     /// cases the user has right now and how they're coloured/classified.
+    /// The whole body is Debug-only: it walks every closure and builds strings,
+    /// work that Release builds must not pay for.
     private func dumpClosures() {
+        #if DEBUG
         var seen = Set<String>()
-        AppLog.log("===== chiusure A56 (\(closures.count) occorrenze) =====", "dump")
+        AppLog.log("===== A56 closures (\(closures.count) occurrences) =====", "dump")
         for c in closures {
             let eventID = String(c.id.prefix { $0 != "#" })
             guard seen.insert(eventID).inserted else { continue }
-            let kind = c.kind == .roadBlocked ? "🔴 STRADA" : "🟠 svincolo"
+            let kind = c.kind == .roadBlocked ? "ROAD" : "ramp"
             let place = c.isRampOnly
                 ? A56Line.interchangeLabel(for: c.fromExit)
-                : "\(A56Line.driverLabel(for: c.fromExit)) → \(A56Line.driverLabel(for: c.toExit))"
-            let galleria = c.sourceText.lowercased().contains("galleria") ? "GALLERIA-nel-testo" : "-"
-            AppLog.log("\(kind) | \(c.headline) | \(c.direction.shortName) | \(place) | sev=\(c.severity.displayName) | motivo=\(c.reason) | \(galleria)", "dump")
+                : "\(A56Line.driverLabel(for: c.fromExit)) to \(A56Line.driverLabel(for: c.toExit))"
+            let tunnel = c.sourceText.lowercased().contains("galleria") ? "tunnel-in-text" : "-"
+            AppLog.log("\(kind) | \(c.headline) | \(c.direction.shortName) | \(place) | sev=\(c.severity.displayName) | reason=\(c.reason) | \(tunnel)", "dump")
         }
+        #endif
     }
 
     /// Logs active / upcoming / past counts per direction after a load.
+    /// Debug-only for the same reason: `upcomingDays`/`pastDays` are the most
+    /// expensive calls in the view model.
     private func logSummary() {
+        #if DEBUG
         for dir in Direction.allCases {
             let active = activeClosures(for: dir).count
             let upcoming = upcomingDays(for: dir).reduce(0) { $0 + $1.roadBlocks.count + $1.rampClosures.count }
             let past = pastDays(for: dir).reduce(0) { $0 + $1.roadBlocks.count + $1.rampClosures.count }
             AppLog.log("\(dir.shortName): active=\(active) upcoming=\(upcoming) past=\(past)", "vm")
         }
+        #endif
     }
 
     /// Re-evaluate "now" so the active/upcoming split stays correct while the
@@ -186,9 +202,11 @@ final class ClosuresViewModel {
     /// Re-apply the archive retention (no network) after the user changes the
     /// duration setting.
     func applyRetentionChange() {
-        archivedClosures = archive.reprune(now: now)
-        closures = archivedClosures
-        AppLog.log("retention applied → archived=\(archivedClosures.count)", "vm")
+        Task {
+            archivedClosures = await archive.reprune(now: now)
+            closures = archivedClosures
+            AppLog.log("retention applied, archived=\(archivedClosures.count)", "vm")
+        }
     }
 
     // MARK: - Direction-scoped grouping

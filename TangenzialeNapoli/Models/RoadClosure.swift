@@ -65,6 +65,10 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
     /// Suggested alternative exits to use instead (exit numbers).
     let suggestedAlternatives: [Int]
 
+    /// Structured detour hints parsed from the notice text. Optional so
+    /// archives saved by older builds still decode.
+    let alternativeSuggestions: [AlternativeSuggestion]?
+
     /// `true` when the whole carriageway segment is closed (not just ramps).
     let isFullClosure: Bool
 
@@ -86,6 +90,7 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
         reason: String,
         severity: Severity? = nil,
         suggestedAlternatives: [Int] = [],
+        alternativeSuggestions: [AlternativeSuggestion]? = nil,
         isFullClosure: Bool = false,
         sourceText: String = "",
         evidence: ClosureEvidence? = nil
@@ -105,9 +110,11 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
             isFullClosure: isFullClosure,
             spanExits: abs(toExit - fromExit),
             closedRampCount: rampImpacts.filter(\.isClosed).count,
-            reason: reason
+            reason: reason,
+            noticeText: sourceText
         )
         self.suggestedAlternatives = suggestedAlternatives
+        self.alternativeSuggestions = alternativeSuggestions
         self.isFullClosure = isFullClosure
         self.sourceText = sourceText
         self.evidence = evidence
@@ -186,6 +193,16 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
     /// For a ramp-only closure, the exit the ramps belong to.
     var rampExitNumber: Int { lowerExit }
 
+    /// The published "leave the road here" exit for a driver heading in
+    /// `direction`, if the notice states one. Re-entry suggestions and hints
+    /// for the other carriageway are excluded on purpose: presenting one of
+    /// those as "exit here" would send the driver the wrong way.
+    func recommendedExitBefore(for direction: Direction) -> Int? {
+        alternativeSuggestions?.first {
+            $0.kind == .exitBefore && ($0.direction == nil || $0.direction == direction)
+        }?.exitNumber
+    }
+
     /// Big headline for a card, in driver language.
     var headline: String {
         switch kind {
@@ -217,6 +234,29 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
             reason: reason,
             severity: severity,
             suggestedAlternatives: suggestedAlternatives,
+            alternativeSuggestions: alternativeSuggestions,
+            isFullClosure: isFullClosure,
+            sourceText: sourceText,
+            evidence: evidence
+        )
+    }
+
+    /// Copy with the window truncated at `date`. Used when the live feed stops
+    /// reporting a closure it previously published.
+    func ended(at date: Date) -> RoadClosure {
+        RoadClosure(
+            id: id,
+            start: start,
+            end: max(date, start.addingTimeInterval(60)),
+            direction: direction,
+            affectsBothDirections: affectsBothDirections,
+            fromExit: fromExit,
+            toExit: toExit,
+            rampImpacts: rampImpacts,
+            reason: reason,
+            severity: severity,
+            suggestedAlternatives: suggestedAlternatives,
+            alternativeSuggestions: alternativeSuggestions,
             isFullClosure: isFullClosure,
             sourceText: sourceText,
             evidence: evidence

@@ -80,9 +80,12 @@ nonisolated enum A56Line {
     private static let officialPointIDs: [Int: Int] = [
         11222: 1,     // Secondigliano-Aeroporto
         11071: 2,     // Capodichino
+        1117: 2,      // Capodichino (variant id used by eventi.json)
         11224: 3,     // Doganella
         1124: 5,      // Capodimonte
         11044: 6,     // Arenella
+        1125: 7,      // Zona Ospedaliera
+        1126: 8,      // Camaldoli
         1127: 9,      // Vomero
         1129: 10,     // Fuorigrotta
         11221: 11,    // Italia 90
@@ -110,6 +113,11 @@ nonisolated enum A56Line {
         "via campana": 13,
         "cuma": 14,
         "arco felice": 15, "pozzuoli": 15, "bacoli": 15,
+        // Terminal labels follow the official kilometre axis, which runs
+        // west to east: km 0 ("Inizio") at Arco Felice, km ~20 ("Fine") at
+        // the Capodichino junction. Confirmed against n_km_ini in real rows.
+        "inizio tangenziale": 15,
+        "fine tangenziale": 1,
     ]
 
     /// Resolve an official location using its stable id first, then its label.

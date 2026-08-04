@@ -9,14 +9,17 @@
 
 import Foundation
 
-struct ArchivedClosures: Codable, Sendable {
+nonisolated struct ArchivedClosures: Codable, Sendable {
     var schemaVersion: Int?
     var lastFetchedAt: Date
     var closures: [RoadClosure]
 }
 
-struct ClosureArchive {
+/// An actor: reads, merges and atomic writes happen off the main thread, and
+/// concurrent refreshes cannot interleave their read-modify-write cycles.
+actor ClosureArchive {
     private static let currentSchemaVersion = 2
+    private static let fileName = "a56_archive.json"
 
     /// UserDefaults key and default for the in-app retention setting.
     static let retentionKey = "archiveRetentionDays"
@@ -28,9 +31,22 @@ struct ClosureArchive {
         return TimeInterval(max(1, days) * 24 * 60 * 60)
     }
 
+    /// The archive is the app's only memory of closures that already started
+    /// (the planned feed is forward-only), so it lives in Application Support:
+    /// unlike Caches, the system does not purge it under storage pressure.
     private let fileURL: URL = {
-        let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-        return dir.appendingPathComponent("a56_archive.json")
+        let manager = FileManager.default
+        let support = manager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        try? manager.createDirectory(at: support, withIntermediateDirectories: true)
+        let url = support.appendingPathComponent(fileName)
+
+        // One-time move of archives written by builds that used Caches.
+        let legacy = manager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent(fileName)
+        if !manager.fileExists(atPath: url.path), manager.fileExists(atPath: legacy.path) {
+            try? manager.moveItem(at: legacy, to: url)
+        }
+        return url
     }()
 
     func load() -> ArchivedClosures? {
@@ -56,33 +72,49 @@ struct ClosureArchive {
     /// so a previously-seen closure missing from `fetched` is kept if it has
     /// already started — that's a feed prune, and it may still be active. A
     /// missing future row is treated as cancelled only when the planned feed
-    /// was fully available and mapped; otherwise it is retained. Entries older
-    /// than the retention are pruned.
+    /// was fully available and mapped. A live-feed row that is active but no
+    /// longer published is closed at "now" when the live feed was fully
+    /// readable (works finished early). Entries older than the retention are
+    /// pruned.
     @discardableResult
     func record(
         _ fetched: [RoadClosure],
         now: Date,
-        canInferCancellations: Bool = true
+        canInferCancellations: Bool = true,
+        canRevalidateActive: Bool = false
     ) -> [RoadClosure] {
         let fetchedIDs = Set(fetched.map(\.id))
         let existing = load()?.closures ?? []
         var merged: [RoadClosure] = []
         var retainedMissing = 0
+        var revalidated = 0
 
         for old in existing where !fetchedIDs.contains(old.id) {
-            if old.start <= now || !canInferCancellations {
-                // Already started may have been pruned by the forward feed.
-                // Future rows are retained whenever the planned feed was not
-                // fully available/mappable, because absence is then ambiguous.
+            guard old.start <= now || !canInferCancellations else {
+                // Still in the future but gone from a fully-mapped planned
+                // feed: cancelled.
+                continue
+            }
+            if canRevalidateActive,
+               old.evidence == .realtime,
+               old.start <= now, old.end > now,
+               !fetched.contains(where: { ClosureMatching.sameOccurrence($0, old) }) {
+                // Born from the live feed, would still be active, but the
+                // (fully readable) live feed no longer reports it: over.
+                merged.append(old.ended(at: now))
+                revalidated += 1
+            } else {
                 merged.append(old)
                 retainedMissing += 1
             }
-            // else: still in the future but gone → treat as cancelled → drop
         }
         for fresh in fetched {
             if let exactIndex = merged.firstIndex(where: { $0.id == fresh.id }) {
-                merged[exactIndex] = fresh
-            } else if let equivalentIndex = merged.firstIndex(where: { sameOccurrence($0, fresh) }) {
+                // Same official row seen again: adopt the update but keep the
+                // earliest start, so editorial updates cannot shift when the
+                // closure appears to have begun.
+                merged[exactIndex] = reconcile(merged[exactIndex], with: fresh)
+            } else if let equivalentIndex = merged.firstIndex(where: { ClosureMatching.sameOccurrence($0, fresh) }) {
                 // The planned and real-time feeds use different ids for the same
                 // closure. Keep one row and preserve the original start/id.
                 merged[equivalentIndex] = reconcile(merged[equivalentIndex], with: fresh)
@@ -93,7 +125,10 @@ struct ClosureArchive {
 
         let pruned = prune(merged, now: now)
         save(pruned, lastFetchedAt: now)
-        AppLog.log("record: fetched=\(fetched.count) archived=\(existing.count) retainedMissing=\(retainedMissing) inferCancellations=\(canInferCancellations) → merged=\(pruned.count)", "arch")
+        AppLog.log(
+            "record: fetched=\(fetched.count) archived=\(existing.count) retainedMissing=\(retainedMissing) revalidated=\(revalidated) inferCancellations=\(canInferCancellations) → merged=\(pruned.count)",
+            "arch"
+        )
         return pruned
     }
 
@@ -114,30 +149,6 @@ struct ClosureArchive {
         return closures.filter { $0.end >= cutoff }.sorted { $0.start < $1.start }
     }
 
-    private func sameOccurrence(_ lhs: RoadClosure, _ rhs: RoadClosure) -> Bool {
-        guard lhs.kind == rhs.kind,
-              lhs.lowerExit == rhs.lowerExit,
-              lhs.upperExit == rhs.upperExit,
-              sameRampImpact(lhs, rhs),
-              lhs.affectsBothDirections == rhs.affectsBothDirections,
-              lhs.affectsBothDirections || lhs.direction == rhs.direction
-        else { return false }
-        // Repeated nightly closures have identical places but do not overlap,
-        // while the planned and active versions of one occurrence do.
-        return lhs.start < rhs.end && rhs.start < lhs.end
-    }
-
-    private func sameRampImpact(_ lhs: RoadClosure, _ rhs: RoadClosure) -> Bool {
-        guard lhs.kind == .rampsClosed else { return true }
-        let lhsSignature = Set(lhs.closedRamps.map {
-            "\($0.exitNumber)#\($0.kind.rawValue)"
-        })
-        let rhsSignature = Set(rhs.closedRamps.map {
-            "\($0.exitNumber)#\($0.kind.rawValue)"
-        })
-        return lhsSignature == rhsSignature
-    }
-
     private func reconcile(_ stored: RoadClosure, with fresh: RoadClosure) -> RoadClosure {
         RoadClosure(
             id: stored.id,
@@ -151,6 +162,7 @@ struct ClosureArchive {
             reason: fresh.reason,
             severity: fresh.severity,
             suggestedAlternatives: fresh.suggestedAlternatives,
+            alternativeSuggestions: fresh.alternativeSuggestions ?? stored.alternativeSuggestions,
             isFullClosure: fresh.isFullClosure,
             sourceText: fresh.sourceText,
             evidence: reconciledEvidence(stored.evidence, fresh.evidence)
@@ -186,7 +198,6 @@ struct ClosureArchive {
             toExit: shifted(old.toExit),
             rampImpacts: old.rampImpacts.map {
                 ClosureRampImpact(
-                    id: $0.id,
                     exitNumber: shifted($0.exitNumber),
                     kind: $0.kind,
                     direction: $0.direction,
@@ -196,6 +207,7 @@ struct ClosureArchive {
             reason: old.reason,
             severity: old.severity,
             suggestedAlternatives: old.suggestedAlternatives.map(shifted),
+            alternativeSuggestions: nil,
             isFullClosure: old.isFullClosure,
             sourceText: old.sourceText,
             evidence: old.evidence
@@ -208,8 +220,11 @@ struct ClosureArchive {
             lastFetchedAt: lastFetchedAt,
             closures: closures
         )
-        if let data = try? JSONEncoder().encode(payload) {
-            try? data.write(to: fileURL, options: .atomic)
+        do {
+            let data = try JSONEncoder().encode(payload)
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            AppLog.log("archive save failed: \(error.localizedDescription)", "arch")
         }
     }
 }

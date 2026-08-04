@@ -16,9 +16,12 @@ struct RoadBlockCard: View {
     private var toName: String { A56Line.driverLabel(for: closure.toExit) }
     private var accent: Color { .a56Block }
 
-    /// First suggested alternative exit, phrased for the driver.
+    /// "Esci a …" comes only from an official "Uscita consigliata" hint that
+    /// matches this carriageway. A re-entry hint or a hint for the opposite
+    /// direction phrased this way would point the driver at a ramp they cannot
+    /// use.
     private var alternativeText: String? {
-        guard let alt = closure.suggestedAlternatives.first,
+        guard let alt = closure.recommendedExitBefore(for: closure.direction),
               let exit = A56Line.exit(alt) else { return nil }
         return "Esci a \(exit.shortLabel)"
     }

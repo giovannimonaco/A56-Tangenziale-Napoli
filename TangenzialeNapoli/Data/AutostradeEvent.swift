@@ -10,8 +10,41 @@
 import Foundation
 
 /// Root object of previsioni.json: `{ "events": [ … ] }`.
+///
+/// Rows are decoded one by one: a malformed row (typically for another
+/// motorway) is dropped and counted instead of failing the whole feed.
 struct AutostradeFeed: Decodable, Sendable {
     let events: [AutostradeEvent]
+    let undecodedEventCount: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case events
+    }
+
+    /// Consumes one array element of any shape, so decoding can move past a
+    /// row that `AutostradeEvent` rejects.
+    private struct AnyRow: Decodable {}
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        var rows = try container.nestedUnkeyedContainer(forKey: .events)
+
+        var decoded: [AutostradeEvent] = []
+        var dropped = 0
+        while !rows.isAtEnd {
+            if let event = try? rows.decode(AutostradeEvent.self) {
+                decoded.append(event)
+            } else if (try? rows.decode(AnyRow.self)) != nil {
+                dropped += 1
+            } else {
+                // The element cannot be consumed at all; stop rather than spin.
+                dropped += 1
+                break
+            }
+        }
+        events = decoded
+        undecodedEventCount = dropped
+    }
 }
 
 /// One planned-event row. Only the fields we use are modelled, and all are

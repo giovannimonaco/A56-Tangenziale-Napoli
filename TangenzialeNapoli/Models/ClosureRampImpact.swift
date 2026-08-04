@@ -10,7 +10,6 @@ import Foundation
 /// Describes how one ramp at a specific exit is affected by a closure.
 /// A closure can affect several ramps across one or more exits.
 nonisolated struct ClosureRampImpact: Identifiable, Codable, Hashable, Sendable {
-    let id: UUID
     /// The line point this ramp belongs to (1...15).
     let exitNumber: Int
     /// Entrance (entrata) or exit (uscita) ramp.
@@ -19,6 +18,11 @@ nonisolated struct ClosureRampImpact: Identifiable, Codable, Hashable, Sendable 
     let direction: Direction
     /// Whether the ramp is fully closed. `false` means open but impacted.
     let isClosed: Bool
+
+    /// Value-derived identity, stable across fetches. A random id here would
+    /// make equal fetches compare as different, forcing pointless archive
+    /// rewrites and spurious SwiftUI diffs.
+    var id: String { "\(exitNumber)#\(kind.rawValue)#\(direction.rawValue)" }
 
     enum Kind: String, Codable, Hashable, Sendable {
         case entrance   // entrata / immissione
@@ -51,16 +55,18 @@ nonisolated struct ClosureRampImpact: Identifiable, Codable, Hashable, Sendable 
     var shortLabel: String { "\(kind.displayName) chiusa" }
 
     init(
-        id: UUID = UUID(),
         exitNumber: Int,
         kind: Kind,
         direction: Direction,
         isClosed: Bool = true
     ) {
-        self.id = id
         self.exitNumber = exitNumber
         self.kind = kind
         self.direction = direction
         self.isClosed = isClosed
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case exitNumber, kind, direction, isClosed
     }
 }

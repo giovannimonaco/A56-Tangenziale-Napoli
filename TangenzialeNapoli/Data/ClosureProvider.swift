@@ -35,6 +35,22 @@ struct ClosureFetchResult: Sendable {
     /// Missing future rows can be treated as cancellations only after a
     /// complete planned-feed mapping.
     let canInferCancellations: Bool
+    /// Archived closures that came from the live feed can be closed early
+    /// (works finished ahead of schedule) only when the live feed itself was
+    /// fully readable; otherwise their absence is ambiguous.
+    let canRevalidateActive: Bool
+
+    init(
+        closures: [RoadClosure],
+        quality: ClosureDataQuality?,
+        canInferCancellations: Bool,
+        canRevalidateActive: Bool = false
+    ) {
+        self.closures = closures
+        self.quality = quality
+        self.canInferCancellations = canInferCancellations
+        self.canRevalidateActive = canRevalidateActive
+    }
 }
 
 /// Anything that can supply the current set of A56 closures.

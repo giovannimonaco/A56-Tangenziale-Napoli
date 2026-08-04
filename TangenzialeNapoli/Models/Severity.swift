@@ -59,16 +59,20 @@ nonisolated enum Severity: Int, Codable, Hashable, CaseIterable, Identifiable, C
     ///   - isFullClosure: the carriageway itself is closed (not just ramps).
     ///   - spanExits: how many exits the closed stretch spans (`upper - lower`).
     ///   - closedRampCount: number of closed ramps.
-    ///   - reason: the works description, scanned for keywords like "galleria".
+    ///   - reason: the works description, e.g. "Lavori".
+    ///   - noticeText: the full official notice; tunnels are only ever named
+    ///     here, never in the short cause field.
     static func derived(
         isFullClosure: Bool,
         spanExits: Int,
         closedRampCount: Int,
-        reason: String
+        reason: String,
+        noticeText: String = ""
     ) -> Severity {
         if isFullClosure {
-            let reasonText = reason.lowercased()
-            let isMajor = reasonText.contains("galleria") || spanExits >= 5
+            let mentionsTunnel = reason.lowercased().contains("galleria")
+                || noticeText.lowercased().contains("galleria")
+            let isMajor = mentionsTunnel || spanExits >= 5
             return isMajor ? .critical : .high
         } else {
             return closedRampCount >= 2 ? .moderate : .low

@@ -20,6 +20,12 @@ struct LiveClosureProvider: ClosureProvider {
     static let feedURL = URL(string: "https://viabilita.autostrade.it/json/previsioni.json")!
     static let realtimeFeedURL = URL(string: "https://viabilita.autostrade.it/json/eventi.json")!
 
+    /// A scheduled window is marked "confirmed by the live feed" only when it
+    /// is already running or about to start. The live feed publishes one row
+    /// for a whole multi-night period, which says nothing about whether the
+    /// night after tomorrow will actually go ahead.
+    private static let confirmationHorizon: TimeInterval = 6 * 3600
+
     private let session: URLSession
 
     init(session: URLSession = .shared) {
@@ -55,20 +61,28 @@ struct LiveClosureProvider: ClosureProvider {
         // feed confirms the same occurrence. Only genuinely missing scheduled
         // rows are backfilled with the live activation time.
         let confirmedPlanned = plannedClosures.map { plannedClosure in
-            activeClosures.contains {
-                AutostradeRealtimeClosureMapper.sameOccurrence(plannedClosure, $0)
-            }
+            plannedClosure.start <= now.addingTimeInterval(Self.confirmationHorizon)
+                && activeClosures.contains {
+                    ClosureMatching.sameOccurrence(plannedClosure, $0)
+                }
                 ? plannedClosure.withEvidence(.realtimeConfirmed)
                 : plannedClosure
         }
         let activeBackfill = activeClosures.filter { activeClosure in
             !plannedClosures.contains {
-                AutostradeRealtimeClosureMapper.sameOccurrence($0, activeClosure)
+                ClosureMatching.sameOccurrence($0, activeClosure)
             }
         }
         let closures = (confirmedPlanned + activeBackfill).sorted { $0.start < $1.start }
-        let issueSummaries = (plannedReport.issues + realtimeReport.issues)
+
+        var issueSummaries = (plannedReport.issues + realtimeReport.issues)
             .map(\.summary)
+        if let dropped = planned?.undecodedEventCount, dropped > 0 {
+            issueSummaries.append("\(dropped) righe del feed programmato non decodificabili.")
+        }
+        if let dropped = realtime?.undecodedEventCount, dropped > 0 {
+            issueSummaries.append("\(dropped) righe del feed in tempo reale non decodificabili.")
+        }
         let integrityIssues = Self.integrityIssues(in: closures)
         let quality = ClosureDataQuality(
             plannedFeedAvailable: planned != nil,
@@ -85,7 +99,8 @@ struct LiveClosureProvider: ClosureProvider {
         return ClosureFetchResult(
             closures: closures,
             quality: quality,
-            canInferCancellations: planned?.events.isEmpty == false && plannedReport.isComplete
+            canInferCancellations: planned?.events.isEmpty == false && plannedReport.isComplete,
+            canRevalidateActive: realtime != nil && realtimeReport.isComplete
         )
     }
 
@@ -124,14 +139,17 @@ struct LiveClosureProvider: ClosureProvider {
 
     private func fetchFeed(from url: URL, label: String) async throws -> AutostradeFeed {
         // Cache-busting query param, mirroring the website's own request.
-        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
-        components.queryItems = [URLQueryItem(name: "index", value: String(Double.random(in: 0..<1)))]
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "index", value: String(Double.random(in: 0..<1)))]
+        guard let requestURL = components?.url else {
+            throw ClosureFeedError.badResponse(-1)
+        }
 
-        var request = URLRequest(url: components.url!, timeoutInterval: 15)
+        var request = URLRequest(url: requestURL, timeoutInterval: 15)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("https://www.autostrade.it/", forHTTPHeaderField: "Referer")
 
-        AppLog.log("GET \(label) \(components.url!.absoluteString)", "feed")
+        AppLog.log("GET \(label) \(requestURL.absoluteString)", "feed")
         let (data, response) = try await session.data(for: request)
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? -1

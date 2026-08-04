@@ -186,20 +186,67 @@ struct ClosureDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Alternativa consigliata", systemImage: "arrow.turn.up.right")
 
-            ForEach(closure.suggestedAlternatives, id: \.self) { number in
-                HStack(spacing: 10) {
-                    Image(systemName: "arrow.turn.up.right")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.a56Open)
-                        .frame(width: 28, height: 28)
-                        .background(Color.a56Open.opacity(0.12), in: Circle())
-
-                    Text(A56Line.interchangeLabel(for: number))
-                        .font(.subheadline.weight(.semibold))
+            if let suggestions = relevantSuggestions {
+                ForEach(Array(suggestions.enumerated()), id: \.offset) { _, suggestion in
+                    alternativeRow(
+                        icon: suggestion.kind == .exitBefore
+                            ? "arrow.turn.down.right"
+                            : "arrow.turn.up.right",
+                        title: A56Line.interchangeLabel(for: suggestion.exitNumber),
+                        subtitle: suggestion.kind == .exitBefore
+                            ? "Esci qui prima della chiusura"
+                            : "Rientra da qui dopo la chiusura"
+                    )
+                }
+            } else {
+                // Archives saved by older builds carry only the exit numbers.
+                ForEach(closure.suggestedAlternatives, id: \.self) { number in
+                    alternativeRow(
+                        icon: "arrow.turn.up.right",
+                        title: A56Line.interchangeLabel(for: number),
+                        subtitle: nil
+                    )
                 }
             }
         }
         .detailSurface()
+    }
+
+    /// The official notice can carry hints for both carriageways; show only
+    /// those valid for this closure's direction (all of them when the closure
+    /// affects both).
+    private var relevantSuggestions: [AlternativeSuggestion]? {
+        guard let all = closure.alternativeSuggestions else { return nil }
+        let relevant = all.filter {
+            closure.affectsBothDirections
+                || $0.direction == nil
+                || $0.direction == closure.direction
+        }
+        return relevant.isEmpty ? nil : relevant
+    }
+
+    private func alternativeRow(
+        icon: String,
+        title: String,
+        subtitle: String?
+    ) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.a56Open)
+                .frame(width: 28, height: 28)
+                .background(Color.a56Open.opacity(0.12), in: Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 
     private var sourceCard: some View {
