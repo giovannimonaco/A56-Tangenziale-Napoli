@@ -1,26 +1,20 @@
-//
-//  A56SchematicView.swift
-//  TangenzialeNapoli
-//
-//  Compact, non-geographic abstraction of the whole A56. Its orientation is
-//  geographically stable: Pozzuoli is always left, Capodichino always right.
-//
-
 import SwiftUI
 
+/// Non-geographic schematic of the whole A56. Orientation is fixed:
+/// Pozzuoli on the left, Capodichino on the right.
 struct A56SchematicView: View {
     let closures: [RoadClosure]
     let direction: Direction
     var showsEndpointLabels = true
     var isStatusKnown = true
 
-    /// Node size and label follow Dynamic Type; at fixed sizes, raising the
-    /// system text size gave huge card text next to unreadable exit numbers.
+    /// Scaled with Dynamic Type; at fixed sizes, large system text left the
+    /// exit numbers unreadable next to the card text.
     @ScaledMetric(relativeTo: .caption2) private var nodeDiameter: CGFloat = 20
     @ScaledMetric(relativeTo: .caption2) private var lineWidth: CGFloat = 5
     @ScaledMetric(relativeTo: .caption2) private var nodeFontSize: CGFloat = 9
 
-    /// A56Line is stored east → west; this screen reads west → east.
+    /// A56Line is stored east to west; this view reads west to east.
     private var orderedExits: [A56Exit] {
         Array(A56Line.exits.reversed())
     }

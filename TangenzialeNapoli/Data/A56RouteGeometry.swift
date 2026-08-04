@@ -1,15 +1,9 @@
-//
-//  A56RouteGeometry.swift
-//  TangenzialeNapoli
-//
-//  Detailed geometry of both A56 carriageways. Unlike a live directions
-//  request, this stable reference does not reroute onto local roads while the
-//  motorway is closed — exactly when the app most needs to draw the closure.
-//
-
 import Foundation
 import CoreLocation
 
+/// Static geometry of both A56 carriageways, decoded from embedded polylines.
+/// A live directions request would reroute onto local roads while the motorway
+/// is closed, so it cannot be used to draw the closures themselves.
 nonisolated enum A56RouteGeometry {
     static let attributionURL = URL(string: "https://www.openstreetmap.org/copyright")!
 

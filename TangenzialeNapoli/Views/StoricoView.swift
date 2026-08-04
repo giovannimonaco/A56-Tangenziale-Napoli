@@ -1,13 +1,7 @@
-//
-//  StoricoView.swift
-//  TangenzialeNapoli
-//
-//  Rolling on-device history of past closures for one direction, grouped by day
-//  (most recent first), plus the in-app archive-duration setting.
-//
-
 import SwiftUI
 
+/// On-device history of past closures for one direction, grouped by day
+/// (most recent first), with the retention setting.
 struct StoricoView: View {
     let viewModel: ClosuresViewModel
     @Binding var direction: Direction

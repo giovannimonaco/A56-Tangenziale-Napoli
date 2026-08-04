@@ -1,10 +1,3 @@
-//
-//  Palette.swift
-//  TangenzialeNapoli
-//
-//  Central colour palette — change these to retune the whole app.
-//
-
 import SwiftUI
 
 nonisolated extension ShapeStyle where Self == Color {
@@ -16,8 +9,8 @@ nonisolated extension ShapeStyle where Self == Color {
     static var a56Block: Color { Color("A56Issue") }
 }
 
-/// Shared card treatment. A faint directional wash adds hierarchy without
-/// turning information cards into opaque blocks or compromising Dark Mode.
+/// Shared card treatment: surface fill plus an optional faint accent wash.
+/// The wash is kept subtle so cards stay readable in Dark Mode.
 private struct A56SurfaceModifier: ViewModifier {
     var accent: Color?
     var radius: CGFloat
@@ -65,7 +58,7 @@ extension View {
     }
 }
 
-/// A restrained physical response for custom, borderless controls.
+/// Press feedback for custom borderless controls.
 struct A56PressButtonStyle: ButtonStyle {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 

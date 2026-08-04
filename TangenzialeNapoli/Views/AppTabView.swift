@@ -1,10 +1,3 @@
-//
-//  AppTabView.swift
-//  TangenzialeNapoli
-//
-//  Persistent primary navigation: each top-level job gets one stable tab.
-//
-
 import SwiftUI
 import Combine
 
@@ -15,7 +8,7 @@ struct AppTabView: View {
 
     private static let lastTabKey = "lastSelectedTab"
 
-    /// People who live in the closure list should reopen the app there.
+    /// Last selected tab, so the app reopens where it was left.
     private static var storedTab: AppTab {
         UserDefaults.standard.string(forKey: lastTabKey)
             .flatMap(AppTab.init(rawValue:)) ?? .map
@@ -27,9 +20,8 @@ struct AppTabView: View {
     @AppStorage("selectedDirection") private var direction: Direction = .towardPozzuoli
     @Environment(\.scenePhase) private var scenePhase
 
-    /// Stored once: a publisher built inside `body` would be replaced (and its
-    /// countdown restarted) on every render, so the tick could starve while
-    /// the user interacts with the app.
+    /// Stored once: a publisher built inside `body` would be replaced on every
+    /// render, restarting its countdown.
     private let minuteTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
     init(viewModel: ClosuresViewModel? = nil) {

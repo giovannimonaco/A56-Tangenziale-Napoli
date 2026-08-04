@@ -1,13 +1,6 @@
-//
-//  DirectionSwitch.swift
-//  TangenzialeNapoli
-//
-//  The primary control: pick the carriageway you are driving on. Everything
-//  else in the app is scoped to this choice.
-//
-
 import SwiftUI
 
+/// Picks the carriageway. The rest of the app is scoped to this selection.
 struct DirectionSwitch: View {
     @Binding var selection: Direction
     var status: ((Direction) -> (label: String, color: Color))? = nil

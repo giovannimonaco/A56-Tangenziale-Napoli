@@ -1,11 +1,5 @@
-//
-//  SeverityBadge.swift
-//  TangenzialeNapoli
-//
-
 import SwiftUI
 
-/// A small coloured pill showing a closure's severity.
 struct SeverityBadge: View {
     let severity: Severity
     var showsLabel: Bool = true

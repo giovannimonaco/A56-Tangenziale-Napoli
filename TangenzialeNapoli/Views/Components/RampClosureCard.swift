@@ -1,12 +1,6 @@
-//
-//  RampClosureCard.swift
-//  TangenzialeNapoli
-//
-//  The lighter one: the road is open, but a specific entrance/exit is closed.
-//
-
 import SwiftUI
 
+/// Card for a closed entrance/exit while the carriageway itself stays open.
 struct RampClosureCard: View {
     let closure: RoadClosure
     /// When the closure is happening now, show "fino alle …" instead of the range.
@@ -14,7 +8,7 @@ struct RampClosureCard: View {
 
     private var exitName: String { A56Line.name(for: closure.rampExitNumber) }
 
-    /// A u-turn glyph hinting "you can't get on/off here".
+    /// U-turn glyph oriented by what is closed (entrance, exit, or both).
     private var glyph: String {
         let hasEntrance = !closure.closedEntrances.isEmpty
         let hasExit = !closure.closedExits.isEmpty

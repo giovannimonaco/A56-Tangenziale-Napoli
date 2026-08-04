@@ -1,11 +1,3 @@
-//
-//  OverviewMapView.swift
-//  TangenzialeNapoli
-//
-//  Visual A56 status on Apple Maps. The home remains the detailed dashboard;
-//  this screen answers "where is it?" at a glance and reveals details on tap.
-//
-
 import SwiftUI
 import MapKit
 
@@ -31,8 +23,8 @@ struct OverviewMapView: View {
     @State private var scopePanelHeight: CGFloat = 180
     @Namespace private var mapScope
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// Markers follow Dynamic Type: fixed 9–11pt labels were unreadable for
-    /// anyone who raises the system text size.
+    /// Markers follow Dynamic Type: fixed 9-11pt labels were unreadable at
+    /// large text sizes.
     @ScaledMetric(relativeTo: .caption2) private var markerDiameter: CGFloat = 23
     @ScaledMetric(relativeTo: .caption2) private var markerFontSize: CGFloat = 12
     @State private var camera: MapCameraPosition = .region(
@@ -160,9 +152,8 @@ struct OverviewMapView: View {
             }
 
         }
-        // No Apple traffic layer: its red congestion segments on and around
-        // the A56 are nearly identical to the red closure polylines, and a
-        // "closed" mark must stay unmistakable.
+        // Traffic layer off: Apple's red congestion segments on and around
+        // the A56 look nearly identical to the red closure polylines.
         .mapStyle(
             .standard(
                 elevation: .flat,
@@ -293,8 +284,8 @@ struct OverviewMapView: View {
         refreshInProgress && lastUpdatedAt == nil && closures.isEmpty
     }
 
-    /// Keep the route neutral until the first response arrives: painting it
-    /// as open early would communicate an all-clear that has not been checked.
+    /// Neutral route color while data is stale; teal would read as an
+    /// all-clear that has not been checked.
     private var routeOpenColor: Color {
         dataIsStale ? .a56Unknown : .a56Open
     }
@@ -305,9 +296,9 @@ struct OverviewMapView: View {
         }
     }
 
-    /// Cached: rebuilding these windows means running Calendar math for every
-    /// closure on every day, and the map body reads `scoped` once per
-    /// annotation. Recomputed via `onChange` on its actual inputs.
+    /// Cached: rebuilding the windows runs Calendar math for every closure on
+    /// every day, and the map body reads `scoped` once per annotation.
+    /// Recomputed via `onChange` on its inputs.
     private var availableTimeWindows: [ClosureTimeWindow] { cachedTimeWindows }
 
     private func recomputeTimeWindows() {
@@ -319,8 +310,8 @@ struct OverviewMapView: View {
         let relevant = closures.filter { $0.end > now }
 
         // Day keys come from every day a closure touches, not just start
-        // days: a multi-day closure already in progress must keep producing
-        // windows for the days it still covers.
+        // days: a multi-day closure in progress still needs windows for the
+        // days it covers.
         var dayKeys = Set<Date>()
         for closure in relevant {
             dayKeys.formUnion(closure.scheduleDays(notBefore: now, calendar: calendar))
@@ -353,8 +344,7 @@ struct OverviewMapView: View {
 
     // MARK: - Map content
 
-    /// The line numbering is a stable visual layer: every exit remains visible
-    /// in teal unless a closure marks that exit red.
+    /// All exits stay visible; a closure only changes the marker color.
     private var referenceExits: [A56Exit] {
         A56Line.exits
     }
@@ -409,10 +399,10 @@ struct OverviewMapView: View {
         else { return nil }
 
         // The controls cover a large part of the map on compact displays.
-        // Fit the route inside the genuinely visible area instead of centring
-        // it in the full Map frame, where the eastern exits would be hidden.
-        // Reserve the larger "Programmate" panel in both modes so changing
-        // the time scope never changes the camera.
+        // Fit the route inside the visible area instead of centring it in the
+        // full Map frame, where the eastern exits would be hidden. Reserve
+        // the taller "Programmate" panel in both modes so switching the time
+        // scope never moves the camera.
         let reservedPanelHeight = max(180, scopePanelHeight + 8)
         let horizontalPadding: CGFloat = viewportSize.width < 430 ? 26 : 34
         let verticalPadding: CGFloat = 24
@@ -790,9 +780,8 @@ struct OverviewMapView: View {
         let count: Int
     }
 
-    /// The typical check is "can I drive tonight?", often made in the
-    /// afternoon: with the "Adesso" scope showing an all-clear, a closure
-    /// starting a few hours later would be invisible without switching scope.
+    /// A closure starting within 24h would be invisible in the "Adesso"
+    /// scope; surface it there without requiring a scope switch.
     private var imminentClosureHint: ImminentHint? {
         guard scope == .now else { return nil }
         let horizon = now.addingTimeInterval(24 * 3600)
@@ -856,8 +845,8 @@ struct OverviewMapView: View {
         }
     }
 
-    /// Same three-way copy as the Home status row: a partial refresh must not
-    /// read like the offline cache state.
+    /// Same three-way copy as the Home status row: a partial refresh should
+    /// not read like the offline cache state.
     private var updateTimestampLabel: String {
         if refreshInProgress { return "Aggiornamento in corso…" }
         switch freshness {

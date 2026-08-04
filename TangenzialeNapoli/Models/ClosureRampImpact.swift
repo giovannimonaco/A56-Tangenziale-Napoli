@@ -1,27 +1,18 @@
-//
-//  ClosureRampImpact.swift
-//  TangenzialeNapoli
-//
-//  A single affected ramp (entrance or exit) at a given svincolo.
-//
-
 import Foundation
 
-/// Describes how one ramp at a specific exit is affected by a closure.
+/// How one ramp at a specific exit is affected by a closure.
 /// A closure can affect several ramps across one or more exits.
 nonisolated struct ClosureRampImpact: Identifiable, Codable, Hashable, Sendable {
     /// The line point this ramp belongs to (1...15).
     let exitNumber: Int
-    /// Entrance (entrata) or exit (uscita) ramp.
     let kind: Kind
     /// Which carriageway the ramp feeds.
     let direction: Direction
     /// Whether the ramp is fully closed. `false` means open but impacted.
     let isClosed: Bool
 
-    /// Value-derived identity, stable across fetches. A random id here would
-    /// make equal fetches compare as different, forcing pointless archive
-    /// rewrites and spurious SwiftUI diffs.
+    /// Value-derived so equal fetches stay equal; a random id would force
+    /// archive rewrites and spurious SwiftUI diffs.
     var id: String { "\(exitNumber)#\(kind.rawValue)#\(direction.rawValue)" }
 
     enum Kind: String, Codable, Hashable, Sendable {

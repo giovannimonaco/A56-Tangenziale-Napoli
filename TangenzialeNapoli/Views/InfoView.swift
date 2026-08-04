@@ -1,10 +1,3 @@
-//
-//  InfoView.swift
-//  TangenzialeNapoli
-//
-//  Concise product, safety, source, privacy and attribution information.
-//
-
 import SwiftUI
 
 struct InfoView: View {

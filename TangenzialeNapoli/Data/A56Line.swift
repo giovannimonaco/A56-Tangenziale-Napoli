@@ -1,24 +1,13 @@
-//
-//  A56Line.swift
-//  TangenzialeNapoli
-//
-//  Static description of the A56 line: the ordered list of exits.
-//
-
 import Foundation
 import CoreLocation
 
-/// The fixed topology of the A56 Tangenziale di Napoli.
-///
-/// The exit list is static reference data (it does not come from the closure
-/// feed), so it lives here rather than in a provider.
+/// Fixed topology of the A56 Tangenziale di Napoli. The exit list is static
+/// reference data, not something the closure feed provides.
 nonisolated enum A56Line {
 
-    /// All 15 internal line points, ordered east to west. There are 14
-    /// commercially numbered exits plus the unnumbered Italia 90 access.
-    ///
-    /// The numbers are stable positions used by the app's schematic map, not
-    /// motorway exit numbers published by the operator.
+    /// The 15 line points ordered east to west: 14 numbered exits plus the
+    /// unnumbered Italia 90 access. `number` is the position on the schematic
+    /// map, not the operator's exit number.
     static let exits: [A56Exit] = [
         A56Exit(number: 1,  commercialNumber: 1,  name: "Aeroporto",                         latitude: 40.877416, longitude: 14.290162),
         A56Exit(number: 2,  commercialNumber: 2,  name: "Capodichino / Secondigliano",       latitude: 40.873481, longitude: 14.285730),
@@ -37,17 +26,14 @@ nonisolated enum A56Line {
         A56Exit(number: 15, commercialNumber: 14, name: "Arco Felice / Pozzuoli / Bacoli",   latitude: 40.839333, longitude: 14.088862),
     ]
 
-    /// Look up an exit by number. Returns `nil` for out-of-range numbers.
     static func exit(_ number: Int) -> A56Exit? {
         exits.first { $0.number == number }
     }
 
-    /// Human-readable name for an exit number, falling back gracefully.
     static func name(for number: Int) -> String {
         exit(number)?.name ?? "Posizione non riconosciuta"
     }
 
-    /// Number and name as a driver sees them on the road.
     static func driverLabel(for number: Int) -> String {
         exit(number)?.shortLabel ?? "Posizione non riconosciuta"
     }
@@ -65,18 +51,16 @@ nonisolated enum A56Line {
         exits.map(\.coordinate)
     }
 
-    /// The exits lying within a closed stretch (inclusive).
+    /// Exits between the two endpoints, inclusive.
     static func exits(from lower: Int, to upper: Int) -> [A56Exit] {
         exits.filter { ($0.number >= min(lower, upper)) && ($0.number <= max(lower, upper)) }
     }
 
     // MARK: - Resolving official API names
 
-    /// Stable point identifiers published in `c_pnt_dtx_pls_pri/sec`.
-    ///
-    /// These are the primary resolution key: unlike labels, they do not depend
-    /// on spelling or punctuation. Name aliases remain as a guarded fallback
-    /// for old/incomplete rows and for places parsed from the notice text.
+    /// Stable point identifiers published in `c_pnt_dtx_pls_pri/sec`. These
+    /// don't depend on spelling, so they resolve first; name aliases are the
+    /// fallback for old/incomplete rows and places parsed from the notice text.
     private static let officialPointIDs: [Int: Int] = [
         11222: 1,     // Secondigliano-Aeroporto
         11071: 2,     // Capodichino
@@ -129,8 +113,8 @@ nonisolated enum A56Line {
         return resolveExit(named: rawName)
     }
 
-    /// Detect the rare but important case where the official numeric id and
-    /// the accompanying label identify two different places.
+    /// True when the official numeric id and the accompanying label resolve
+    /// to two different places.
     static func hasResolutionConflict(pointID: Int?, named rawName: String?) -> Bool {
         guard let pointID,
               pointID != 0,
@@ -142,10 +126,9 @@ nonisolated enum A56Line {
         return byID != byName
     }
 
-    /// Resolve an official feed name (e.g. "Zona Ospedaliera", "Vomero") to an
-    /// exit number. Exact matches always win. The final contains match is
-    /// deterministic and succeeds only when every matching alias identifies
-    /// the same line point, avoiding accidental ambiguous mappings.
+    /// Resolve an official feed name to an exit number. Exact matches win;
+    /// the contains fallback only succeeds when every matching alias points
+    /// at the same line point.
     static func resolveExit(named rawName: String) -> Int? {
         let key = normalize(rawName)
         guard !key.isEmpty else { return nil }
@@ -160,8 +143,8 @@ nonisolated enum A56Line {
         return matches.count == 1 ? matches.first : nil
     }
 
-    /// Put two endpoints in actual travel order, independently of the order in
-    /// which `locpri` and `locsec` happen to appear in the JSON row.
+    /// Order two endpoints in travel direction; the `locpri`/`locsec` order
+    /// in the JSON row is arbitrary.
     static func orderedEndpoints(_ first: Int, _ second: Int, direction: Direction) -> (Int, Int) {
         if direction.goesUpTheLine {
             return (min(first, second), max(first, second))

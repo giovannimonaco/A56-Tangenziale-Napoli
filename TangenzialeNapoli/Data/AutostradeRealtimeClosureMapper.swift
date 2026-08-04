@@ -1,14 +1,8 @@
-//
-//  AutostradeRealtimeClosureMapper.swift
-//  TangenzialeNapoli
-//
-//  Maps the official real-time "eventi.json" feed. This feed is the overnight
-//  safety net: it still reports a closure after it has started, even when the
-//  forward-looking "previsioni.json" feed no longer contains yesterday's row.
-//
-
 import Foundation
 
+/// Maps the real-time eventi.json feed. It keeps reporting a closure after it
+/// has started, which covers the overnight gap once previsioni.json drops the
+/// row.
 nonisolated enum AutostradeRealtimeClosureMapper {
 
     struct MappingReport: Sendable {

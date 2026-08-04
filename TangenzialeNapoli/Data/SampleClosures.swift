@@ -1,14 +1,7 @@
-//
-//  SampleClosures.swift
-//  TangenzialeNapoli
-//
-//  Seeded, realistic closures used until a live feed is connected.
-//  Each closure keeps a plausible Italian `sourceText` so the future
-//  parser has representative input to work against.
-//
-
 import Foundation
 
+/// Seeded closures for previews and tests. Each keeps a plausible Italian
+/// `sourceText` so parsing code has representative input.
 enum SampleClosures {
 
     /// Build the sample set anchored to the current date so the Home screen's
@@ -28,7 +21,7 @@ enum SampleClosures {
 
             // MARK: Today
 
-            // Full carriageway segment closed overnight — Vomero → Capodimonte.
+            // Full carriageway segment closed overnight, Vomero -> Capodimonte.
             RoadClosure(
                 start: at(0, 22, 0),
                 end: at(1, 6, 0),
@@ -52,7 +45,7 @@ enum SampleClosures {
                 """
             ),
 
-            // Single ramp closed — Corso Malta entrance toward Pozzuoli.
+            // Single ramp closed: Corso Malta entrance toward Pozzuoli.
             RoadClosure(
                 start: at(0, 21, 0),
                 end: at(1, 5, 0),
@@ -75,7 +68,7 @@ enum SampleClosures {
 
             // MARK: Tomorrow
 
-            // Tunnel works, full closure Fuorigrotta → Agnano.
+            // Tunnel works, full closure Fuorigrotta -> Agnano.
             RoadClosure(
                 start: at(1, 23, 0),
                 end: at(2, 6, 0),
@@ -121,7 +114,7 @@ enum SampleClosures {
 
             // MARK: Next days
 
-            // Viaduct inspection, long stretch Corso Malta → Vomero (in 2 days).
+            // Viaduct inspection, long stretch Corso Malta -> Vomero (in 2 days).
             RoadClosure(
                 start: at(2, 22, 30),
                 end: at(3, 5, 30),
@@ -144,7 +137,7 @@ enum SampleClosures {
                 """
             ),
 
-            // Daytime urgent works Agnano → Fuorigrotta (in 3 days).
+            // Daytime urgent works Agnano -> Fuorigrotta (in 3 days).
             RoadClosure(
                 start: at(3, 9, 0),
                 end: at(3, 17, 0),

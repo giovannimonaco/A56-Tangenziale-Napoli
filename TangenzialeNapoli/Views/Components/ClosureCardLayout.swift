@@ -1,14 +1,7 @@
-//
-//  ClosureCardLayout.swift
-//  TangenzialeNapoli
-//
-//  Shared native card chrome: a neutral grouped-background card with a tinted
-//  SF Symbol status chip, a headline, a trailing time, and free-form detail.
-//  Color is used as an accent (chip), not as a filled background — per HIG.
-//
-
 import SwiftUI
 
+/// Shared card chrome: tinted status chip, headline, trailing time and
+/// free-form detail. Color only tints the chip, never the card background.
 struct ClosureCardLayout<Content: View>: View {
     let glyph: String
     let accent: Color

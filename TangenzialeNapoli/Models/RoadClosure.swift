@@ -1,14 +1,6 @@
-//
-//  RoadClosure.swift
-//  TangenzialeNapoli
-//
-//  The core domain model: one planned closure on the A56.
-//
-
 import Foundation
 
-/// What a closure means to a driver — the single most important distinction in
-/// the app. Either the road ahead is blocked, or only some ramps are closed.
+/// Either the road ahead is blocked, or only some ramps are closed.
 nonisolated enum ClosureKind: Hashable, Sendable {
     /// The carriageway itself is closed: you cannot drive through this stretch.
     case roadBlocked
@@ -29,20 +21,16 @@ nonisolated enum ClosureEvidence: String, Codable, Hashable, Sendable {
 }
 
 /// A single planned closure (chiusura programmata) on the A56.
-///
-/// Everything the UI needs is kept here; `sourceText` preserves the original
-/// notice so a displayed closure can always be checked against its source.
 nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
     /// Stable identifier. For live data it is derived from the official event
     /// id (`c_ele`) plus the day, so the same notice keeps the same id.
     let id: String
 
-    /// Start and end of the closure as full date-times. Night closures cross
-    /// midnight, so `end` may fall on the day after `start`.
+    /// Night closures cross midnight, so `end` may fall on the day after
+    /// `start`.
     let start: Date
     let end: Date
 
-    /// Carriageway / travel direction affected.
     let direction: Direction
 
     /// `true` when the closure affects both carriageways (official "in entrambe
@@ -54,7 +42,7 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
     let fromExit: Int
     let toExit: Int
 
-    /// Affected entrances/exits along the stretch.
+    /// Affected entrance/exit ramps along the stretch.
     let rampImpacts: [ClosureRampImpact]
 
     /// Why the closure is in place, e.g. "Lavori di pavimentazione".
@@ -62,7 +50,7 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
 
     let severity: Severity
 
-    /// Suggested alternative exits to use instead (exit numbers).
+    /// Alternative exits to use instead (exit numbers).
     let suggestedAlternatives: [Int]
 
     /// Structured detour hints parsed from the notice text. Optional so
@@ -138,10 +126,9 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
         Calendar.current.startOfDay(for: start)
     }
 
-    /// Calendar rows in which this closure must appear in the scheduled view.
-    /// An overnight closure belongs to the evening on which it starts, while a
-    /// genuinely continuous closure is repeated on every affected row so the
-    /// driver never has to cross-reference it with that day's other notices.
+    /// Calendar rows this closure appears on in the scheduled view. An
+    /// overnight closure belongs to the evening it starts; a multi-day
+    /// continuous closure is repeated on every affected day.
     func scheduleDays(notBefore reference: Date, calendar: Calendar = .current) -> [Date] {
         guard end > reference else { return [] }
 
@@ -175,8 +162,6 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
 
     // MARK: - Driver-facing model
 
-    /// The one distinction a driver cares about first: is the road blocked, or
-    /// are only ramps closed?
     var kind: ClosureKind { isFullClosure ? .roadBlocked : .rampsClosed }
 
     var closedRamps: [ClosureRampImpact] { rampImpacts.filter(\.isClosed) }
@@ -194,16 +179,16 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
     var rampExitNumber: Int { lowerExit }
 
     /// The published "leave the road here" exit for a driver heading in
-    /// `direction`, if the notice states one. Re-entry suggestions and hints
-    /// for the other carriageway are excluded on purpose: presenting one of
-    /// those as "exit here" would send the driver the wrong way.
+    /// `direction`, if the notice states one. Excludes re-entry suggestions
+    /// and hints for the other carriageway: shown as "exit here" they would
+    /// send the driver the wrong way.
     func recommendedExitBefore(for direction: Direction) -> Int? {
         alternativeSuggestions?.first {
             $0.kind == .exitBefore && ($0.direction == nil || $0.direction == direction)
         }?.exitNumber
     }
 
-    /// Big headline for a card, in driver language.
+    /// Card headline, in driver language.
     var headline: String {
         switch kind {
         case .roadBlocked:
@@ -219,8 +204,8 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
         }
     }
 
-    /// Copy while changing only the source evidence. Used when the live feed
-    /// confirms a scheduled occurrence without sacrificing its exact window.
+    /// Copy with only the source evidence changed. Used when the live feed
+    /// confirms a scheduled occurrence, keeping its exact window.
     func withEvidence(_ evidence: ClosureEvidence) -> RoadClosure {
         RoadClosure(
             id: id,

@@ -46,13 +46,9 @@ TangenzialeNapoli/
 
 ## Flusso dei dati
 
-L’app consulta due feed JSON pubblicamente accessibili utilizzati dalle pagine di viabilità di Autostrade per l’Italia:
+Le informazioni provengono da due feed JSON pubblicamente accessibili, gli stessi usati dalle pagine di viabilità di Autostrade per l’Italia: `previsioni.json` per gli eventi programmati ed `eventi.json` per quelli in tempo reale.
 
-1. eventi programmati da `previsioni.json`;
-2. eventi in tempo reale da `eventi.json`;
-3. validazione e associazione dei dati A56 alla topologia fissa degli svincoli;
-4. unione degli eventi programmati e in corso senza perdere gli orari pubblicati;
-5. salvataggio locale dell’ultimo risultato valido per gestire interruzioni temporanee della rete.
+A ogni aggiornamento l’app valida i record A56, li associa alla topologia fissa degli svincoli e unisce programmazione ed eventi in corso senza perdere gli orari pubblicati. L’ultimo risultato valido resta salvato sul dispositivo, così le interruzioni temporanee della rete non lasciano l’app senza dati.
 
 L’integrazione non è ufficiale e i feed non costituiscono un’API pubblica documentata o garantita. L’app segnala chiaramente dati non aggiornati o incompleti e rimanda ai canali del gestore per la verifica.
 

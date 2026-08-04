@@ -1,14 +1,7 @@
-//
-//  A56Exit.swift
-//  TangenzialeNapoli
-//
-//  A single numbered exit (svincolo) of the A56 Tangenziale di Napoli.
-//
-
 import Foundation
 import CoreLocation
 
-/// One line point on the A56. `number` is both the identity and the schematic
+/// One line point (svincolo) on the A56. `number` is both the identity and the schematic
 /// position (1 = Aeroporto … 15 = Arco Felice / Pozzuoli); it is not presented
 /// as an operator-assigned motorway exit number.
 nonisolated struct A56Exit: Identifiable, Codable, Hashable, Sendable {
@@ -27,8 +20,8 @@ nonisolated struct A56Exit: Identifiable, Codable, Hashable, Sendable {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
 
-    /// The individual destinations served by this exit, split from `name`.
-    /// e.g. "Vomero / Soccavo / Pianura" -> ["Vomero", "Soccavo", "Pianura"].
+    /// Destinations split from `name`, e.g.
+    /// "Vomero / Soccavo / Pianura" -> ["Vomero", "Soccavo", "Pianura"].
     var destinations: [String] {
         name.split(separator: "/").map { $0.trimmingCharacters(in: .whitespaces) }
     }

@@ -1,12 +1,3 @@
-//
-//  ClosureArchive.swift
-//  TangenzialeNapoli
-//
-//  Rolling on-device archive. Accumulates closures seen across fetches and
-//  keeps the last N days (user-configurable), so recently-seen closures stay
-//  available even after they drop from the live feed or when offline.
-//
-
 import Foundation
 
 nonisolated struct ArchivedClosures: Codable, Sendable {
@@ -15,25 +6,28 @@ nonisolated struct ArchivedClosures: Codable, Sendable {
     var closures: [RoadClosure]
 }
 
-/// An actor: reads, merges and atomic writes happen off the main thread, and
-/// concurrent refreshes cannot interleave their read-modify-write cycles.
+/// Rolling on-device archive of closures seen across fetches. Keeps the last
+/// N days (user-configurable) so closures stay available after they drop from
+/// the live feed or when offline.
+///
+/// An actor, so concurrent refreshes cannot interleave their read-modify-write
+/// cycles.
 actor ClosureArchive {
     private static let currentSchemaVersion = 2
     private static let fileName = "a56_archive.json"
 
-    /// UserDefaults key and default for the in-app retention setting.
     static let retentionKey = "archiveRetentionDays"
     static let defaultRetentionDays = 10
 
-    /// How long to keep closures after they end — read from the in-app setting.
+    /// How long closures are kept after they end (from the in-app setting).
     private var retention: TimeInterval {
         let days = UserDefaults.standard.object(forKey: Self.retentionKey) as? Int ?? Self.defaultRetentionDays
         return TimeInterval(max(1, days) * 24 * 60 * 60)
     }
 
-    /// The archive is the app's only memory of closures that already started
-    /// (the planned feed is forward-only), so it lives in Application Support:
-    /// unlike Caches, the system does not purge it under storage pressure.
+    /// Lives in Application Support, not Caches: the archive is the only record
+    /// of closures that already started (the planned feed is forward-only), and
+    /// the system purges Caches under storage pressure.
     private let fileURL: URL = {
         let manager = FileManager.default
         let support = manager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -70,7 +64,7 @@ actor ClosureArchive {
     ///
     /// The official feed is forward-only (a closure disappears once it starts),
     /// so a previously-seen closure missing from `fetched` is kept if it has
-    /// already started — that's a feed prune, and it may still be active. A
+    /// already started: that's a feed prune, and it may still be active. A
     /// missing future row is treated as cancelled only when the planned feed
     /// was fully available and mapped. A live-feed row that is active but no
     /// longer published is closed at "now" when the live feed was fully
@@ -126,14 +120,14 @@ actor ClosureArchive {
         let pruned = prune(merged, now: now)
         save(pruned, lastFetchedAt: now)
         AppLog.log(
-            "record: fetched=\(fetched.count) archived=\(existing.count) retainedMissing=\(retainedMissing) revalidated=\(revalidated) inferCancellations=\(canInferCancellations) → merged=\(pruned.count)",
+            "record: fetched=\(fetched.count) archived=\(existing.count) retainedMissing=\(retainedMissing) revalidated=\(revalidated) inferCancellations=\(canInferCancellations) -> merged=\(pruned.count)",
             "arch"
         )
         return pruned
     }
 
     /// Re-apply the (possibly changed) retention to the stored archive without
-    /// re-fetching — used when the user changes the duration in-app.
+    /// re-fetching; used when the user changes the duration in-app.
     @discardableResult
     func reprune(now: Date) -> [RoadClosure] {
         guard let stored = load() else { return [] }

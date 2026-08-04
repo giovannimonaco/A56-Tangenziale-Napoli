@@ -1,15 +1,7 @@
-//
-//  AutostradeEvent.swift
-//  TangenzialeNapoli
-//
-//  Decodable mirror of the public Autostrade "previsioni.json" feed.
-//  Source: https://viabilita.autostrade.it/json/previsioni.json
-//  (the same file the official viability site loads — public, no auth).
-//
-
 import Foundation
 
 /// Root object of previsioni.json: `{ "events": [ … ] }`.
+/// Source: https://viabilita.autostrade.it/json/previsioni.json (public, no auth).
 ///
 /// Rows are decoded one by one: a malformed row (typically for another
 /// motorway) is dropped and counted instead of failing the whole feed.
@@ -47,13 +39,13 @@ struct AutostradeFeed: Decodable, Sendable {
     }
 }
 
-/// One planned-event row. Only the fields we use are modelled, and all are
-/// optional so a schema change degrades gracefully instead of failing the
-/// whole decode. JSON keys are snake_case → decoded with `.convertFromSnakeCase`.
+/// One planned-event row. Only the fields we use are modelled, all optional
+/// so a schema change doesn't fail the whole decode. JSON keys are snake_case,
+/// decoded with `.convertFromSnakeCase`.
 struct AutostradeEvent: Decodable, Sendable {
     let cEle: String?          // stable id, e.g. "20260611_E23_SIV_P_00104_00001"
     let cStr: String?          // road code, e.g. "A56"
-    let cDir: String?          // "N" → Pozzuoli | "P" → Capodichino | "B" → both
+    let cDir: String?          // "N" -> Pozzuoli | "P" -> Capodichino | "B" -> both
     let cGrpTip: String?       // real-time group; "C" identifies active closures
     let tDesFraIt: String?     // type: "Tratto Chiuso" | "Entrata Chiusa" | "Uscita Chiusa" | …
     let tDesFraCauIt: String?  // cause, e.g. "Lavori"

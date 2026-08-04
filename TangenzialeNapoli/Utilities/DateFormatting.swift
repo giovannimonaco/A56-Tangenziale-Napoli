@@ -1,17 +1,11 @@
-//
-//  DateFormatting.swift
-//  TangenzialeNapoli
-//
-//  Localized date/time helpers for closures, in Italian.
-//
-
 import Foundation
 
+/// Italian-locale date/time formatting for closures.
 enum ClosureFormat {
 
     private static let italian = Locale(identifier: "it_IT")
 
-    /// "lun 16 giugno" — a friendly day label for cards and section headers.
+    /// "lun 16 giugno", day label for cards and section headers.
     static func dayLabel(_ date: Date) -> String {
         date.formatted(
             .dateTime.weekday(.abbreviated).day().month(.wide)
@@ -19,8 +13,8 @@ enum ClosureFormat {
         )
     }
 
-    /// "22:00 – 06:00" for the closure's time window. If the closure crosses
-    /// midnight the end is annotated, e.g. "22:00 – 06:00 (+1)".
+    /// "22:00 – 06:00" for the closure's time window. When the closure crosses
+    /// midnight the end gets a day offset, e.g. "22:00 – 06:00 (+1)".
     static func timeRange(_ closure: RoadClosure) -> String {
         let cal = Calendar.current
         let start = closure.start.formatted(.dateTime.hour().minute().locale(italian))
@@ -33,9 +27,9 @@ enum ClosureFormat {
         return daySpan > 0 ? "\(start) – \(end) (+\(daySpan))" : "\(start) – \(end)"
     }
 
-    /// End copy for a closure already in progress. The date is included when
-    /// it does not end today, avoiding the impression that a continuous notice
-    /// ending several days from now will finish this morning.
+    /// End copy for a closure already in progress. Includes the date when the
+    /// closure does not end today, so a multi-day notice does not look like it
+    /// finishes this morning.
     static func endLabel(_ closure: RoadClosure, reference: Date = .now) -> String {
         let time = closure.end.formatted(.dateTime.hour().minute().locale(italian))
         guard !Calendar.current.isDate(closure.end, inSameDayAs: reference) else {
@@ -47,9 +41,9 @@ enum ClosureFormat {
         return "fino \(day) · \(time)"
     }
 
-    /// Time copy for one row of the day-by-day scheduled view. Continuous
-    /// notices are described in the context of that day instead of exposing a
-    /// hard-to-read multi-day `+N` interval.
+    /// Time copy for one row of the day-by-day scheduled view. Multi-day
+    /// notices are described relative to that day instead of with a `+N`
+    /// interval.
     static func scheduledTimeLabel(_ closure: RoadClosure, on day: Date) -> String {
         let calendar = Calendar.current
         let days = closure.scheduleDays(notBefore: closure.start, calendar: calendar)
@@ -68,7 +62,7 @@ enum ClosureFormat {
         return "continua"
     }
 
-    /// "16/06/25 · Lunedì" — explicit date and weekday for a day header.
+    /// "16/06/25 · Lunedì", date and weekday for a day header.
     static func dayDateLabel(_ date: Date) -> String {
         let numeric = date.formatted(
             .dateTime.locale(italian).day(.twoDigits).month(.twoDigits).year(.twoDigits)
@@ -78,9 +72,9 @@ enum ClosureFormat {
         return "\(numeric) · \(capitalized)"
     }
 
-    /// When a timestamp was, for the data-status line: "alle 22:15" if today,
-    /// otherwise with an explicit day ("ieri alle 22:15", "01/08 alle 22:15").
-    /// A bare time would let three-day-old data pass for today's.
+    /// Timestamp for the data-status line: "alle 22:15" if today, otherwise
+    /// with an explicit day ("ieri alle 22:15", "01/08 alle 22:15"). A bare
+    /// time would let days-old data pass for today's.
     static func updateTimeLabel(_ date: Date, reference: Date = .now) -> String {
         let calendar = Calendar.current
         let time = date.formatted(.dateTime.hour().minute().locale(italian))
@@ -97,7 +91,7 @@ enum ClosureFormat {
         return "\(day) alle \(time)"
     }
 
-    /// A relative bucket label for upcoming days, e.g. "Tra 2 giorni".
+    /// Relative label for upcoming days, e.g. "Tra 2 giorni".
     static func relativeDayName(_ date: Date, reference: Date = .now) -> String {
         let cal = Calendar.current
         let days = cal.dateComponents(

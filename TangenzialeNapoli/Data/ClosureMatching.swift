@@ -2,10 +2,10 @@ import Foundation
 
 /// Decides whether two closures describe the same physical occurrence.
 ///
-/// The planned feed, the real-time feed and the on-device archive all use
+/// The planned feed, the real-time feed and the on-device archive use
 /// different identifiers for the same closure, so cross-feed reconciliation
-/// relies on this single definition. Keep archive and mappers on it: if the
-/// criteria diverge, merged rows silently duplicate or overwrite each other.
+/// goes through this single definition; if the criteria diverge, merged rows
+/// duplicate or overwrite each other.
 nonisolated enum ClosureMatching {
 
     static func sameOccurrence(_ lhs: RoadClosure, _ rhs: RoadClosure) -> Bool {

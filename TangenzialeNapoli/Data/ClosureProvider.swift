@@ -1,11 +1,3 @@
-//
-//  ClosureProvider.swift
-//  TangenzialeNapoli
-//
-//  Abstraction over the source of closures. Swap the implementation to go
-//  from preview data to a live feed without touching the UI.
-//
-
 import Foundation
 
 /// Measured quality of one network refresh. Counts are computed before rows
@@ -56,16 +48,16 @@ struct ClosureFetchResult: Sendable {
 /// Anything that can supply the current set of A56 closures.
 ///
 /// The app talks to this protocol only, so the data source is replaceable:
-/// - `MockClosureProvider`  — seeded realistic data for previews and tests.
-/// - `LiveClosureProvider`  — network feeds and parsing pipeline.
+/// - `MockClosureProvider`: seeded data for previews and tests.
+/// - `LiveClosureProvider`: network feeds and parsing pipeline.
 protocol ClosureProvider: Sendable {
     /// Returns all known upcoming closures. Implementations may hit the
     /// network, read a cache, or return seeded data.
     func fetchClosures() async throws -> ClosureFetchResult
 }
 
-/// Safe production fallback: no synthetic road event must ever be presented as
-/// real when both the live source and the local archive are unavailable.
+/// Production fallback: returns nothing, rather than synthetic data, when both
+/// the live source and the local archive are unavailable.
 struct EmptyClosureProvider: ClosureProvider {
     func fetchClosures() async throws -> ClosureFetchResult {
         ClosureFetchResult(
@@ -76,14 +68,11 @@ struct EmptyClosureProvider: ClosureProvider {
     }
 }
 
-/// Provides sample closures that mirror the shape of real Autostrade notices.
-///
-/// Dates are generated relative to "today" so the Home screen always has
-/// content in its Today / Tomorrow / Next days buckets while there is no
-/// live feed wired up yet.
+/// Sample closures shaped like real Autostrade notices, with dates relative
+/// to "today" so the Home screen buckets are always populated.
 struct MockClosureProvider: ClosureProvider {
 
-    /// Simulated latency, so loading states are exercised in the UI.
+    /// Simulated latency, so loading states show up in the UI.
     var simulatedDelay: Duration = .milliseconds(350)
 
     func fetchClosures() async throws -> ClosureFetchResult {

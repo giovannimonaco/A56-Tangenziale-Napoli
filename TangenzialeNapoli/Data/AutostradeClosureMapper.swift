@@ -1,16 +1,8 @@
-//
-//  AutostradeClosureMapper.swift
-//  TangenzialeNapoli
-//
-//  Converts raw `AutostradeEvent`s from previsioni.json into structured,
-//  driver-facing `RoadClosure`s for the A56.
-//
-
 import Foundation
 
+/// Maps planned events from previsioni.json to A56 `RoadClosure`s.
 nonisolated enum AutostradeClosureMapper {
 
-    /// Only the Tangenziale di Napoli.
     static let roadCode = "A56"
 
     enum EventKind {
@@ -50,9 +42,8 @@ nonisolated enum AutostradeClosureMapper {
         mappingReport(from: events, now: now).closures
     }
 
-    /// Maps the feed and counts every relevant occurrence, including failures.
-    /// Callers can therefore expose incomplete coverage instead of silently
-    /// presenting a partial result as complete.
+    /// Maps the feed and counts every relevant occurrence, including failures,
+    /// so callers can expose incomplete coverage.
     static func mappingReport(from events: [AutostradeEvent], now: Date = .now) -> MappingReport {
         let a56 = events.filter { $0.cStr == roadCode }
         var mappedClosures: [RoadClosure] = []
@@ -61,9 +52,9 @@ nonisolated enum AutostradeClosureMapper {
 
         for event in a56 {
             guard eventKind(event) != nil else {
-                // A closure-group row of a type the app cannot interpret yet
-                // (e.g. "Allacciamento Chiuso") must degrade the quality
-                // indicator, not vanish behind a green "all verified" state.
+                // Closure-group rows of a type we can't interpret yet (e.g.
+                // "Allacciamento Chiuso") still count against the quality
+                // indicator.
                 if isUnrecognizedClosureType(event) {
                     expected += 1
                     issues.append(issue(for: event, occurrenceCount: 1))
@@ -128,10 +119,9 @@ nonisolated enum AutostradeClosureMapper {
 
         switch kind {
         case .segment:
-            // The notice text is the fallback for rows whose location fields
-            // are incomplete. A one-endpoint segment is never published as a
-            // zero-length stretch: better an explicit gap in the report than
-            // an understated closure.
+            // Notice text is the fallback for rows whose location fields are
+            // incomplete. If only one endpoint resolves, bail out and let the
+            // report show the gap instead of guessing.
             let noticeExits = NoticeText.segmentEndpoints(in: e.tDesIt ?? "")
             guard let a = A56Line.resolveExit(pointID: e.cPntDtxPlsPri, named: e.locpri)
                     ?? noticeExits?.0,
@@ -222,8 +212,8 @@ nonisolated enum AutostradeClosureMapper {
 
     /// The concrete closure windows for an event: the per-day `indisponibilita`
     /// entries when present, otherwise the overall start/stop. Timestamps that
-    /// fail the sanity check are treated as unreadable, so a schema change on
-    /// the date fields degrades visibly instead of hiding events.
+    /// fail the sanity check count as unreadable, so a schema change on the
+    /// date fields shows up as an issue instead of hiding events.
     static func parsedWindows(_ e: AutostradeEvent) -> [Occurrence] {
         var windows: [Occurrence] = []
         if let list = e.indisponibilita, !list.isEmpty {

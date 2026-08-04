@@ -46,13 +46,9 @@ TangenzialeNapoli/
 
 ## Data pipeline
 
-The app fetches two publicly accessible JSON feeds used by Autostrade per l'Italia's traffic pages:
+Traffic data comes from the two public JSON feeds behind Autostrade per l'Italia's viability pages: `previsioni.json` for planned events and `eventi.json` for real-time ones.
 
-1. planned events from `previsioni.json`;
-2. real-time events from `eventi.json`;
-3. A56 records are validated and mapped to the app's fixed interchange topology;
-4. matching planned and live events are merged without losing the published schedule;
-5. the last valid result is retained locally for temporary network failures.
+On every refresh, A56 records are validated and mapped onto the app's fixed interchange topology; planned and live events are then merged without losing the published schedule. The last valid result stays on the device to cover temporary network failures.
 
 The integration is unofficial and the feeds are not a documented or guaranteed public API. The app clearly marks stale or incomplete data and directs users to the operator's channels for confirmation.
 

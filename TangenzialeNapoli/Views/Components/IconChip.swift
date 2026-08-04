@@ -1,13 +1,7 @@
-//
-//  IconChip.swift
-//  TangenzialeNapoli
-//
-//  The small tinted SF Symbol chip used on closure cards — reused for other
-//  rows (history, empty states) so icons stay the same size and style.
-//
-
 import SwiftUI
 
+/// Tinted SF Symbol chip used on closure cards and reused elsewhere (history,
+/// empty states) so icons keep the same size and style.
 struct IconChip: View {
     let systemName: String
     let color: Color

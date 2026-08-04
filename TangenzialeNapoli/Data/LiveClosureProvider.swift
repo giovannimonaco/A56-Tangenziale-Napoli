@@ -1,22 +1,13 @@
-//
-//  LiveClosureProvider.swift
-//  TangenzialeNapoli
-//
-//  Real data source: combines the public Autostrade planned and real-time feeds
-//  and maps their A56 events into structured closures.
-//
-
 import Foundation
 
-/// Fetches planned closures from the official public viability feed.
+/// Combines the public Autostrade planned and real-time feeds and maps their
+/// A56 events into structured closures.
 ///
-/// This is the same JSON the official site (viabilita.autostrade.it) loads to
-/// render its "Previsioni" page — a public, unauthenticated file. It is an
-/// unofficial integration (no documented API), so callers should treat it as
-/// best-effort and keep a fallback (see `ClosuresViewModel`).
+/// These are the same JSON files the official site (viabilita.autostrade.it)
+/// loads for its viability pages: public, unauthenticated, and undocumented,
+/// so keep a fallback around (see `ClosuresViewModel`).
 struct LiveClosureProvider: ClosureProvider {
 
-    /// Public feeds used by Autostrade's own viability pages.
     static let feedURL = URL(string: "https://viabilita.autostrade.it/json/previsioni.json")!
     static let realtimeFeedURL = URL(string: "https://viabilita.autostrade.it/json/eventi.json")!
 
@@ -93,7 +84,7 @@ struct LiveClosureProvider: ClosureProvider {
             topologyIssues: A56Line.validationIssues + integrityIssues
         )
         AppLog.log(
-            "planned=\(plannedClosures.count), active=\(activeClosures.count), backfill=\(activeBackfill.count), verified=\(quality.mappedRecords)/\(quality.expectedRecords) → \(closures.count) A56 closures",
+            "planned=\(plannedClosures.count), active=\(activeClosures.count), backfill=\(activeBackfill.count), verified=\(quality.mappedRecords)/\(quality.expectedRecords) -> \(closures.count) A56 closures",
             "feed"
         )
         return ClosureFetchResult(

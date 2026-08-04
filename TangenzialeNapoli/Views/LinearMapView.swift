@@ -1,18 +1,12 @@
-//
-//  LinearMapView.swift
-//  TangenzialeNapoli
-//
-//  Vertical schematic of the A56, oriented in the driver's travel direction
-//  (top = behind you, bottom = ahead). Shows a blocked stretch and/or closed
-//  ramps for one carriageway only.
-//
-
 import SwiftUI
 
+/// Vertical schematic of the A56 in the driver's travel direction
+/// (top = behind, bottom = ahead), for one carriageway.
 struct LinearMapView: View {
-    /// When set, highlights this closure's stretch / ramps. Its direction wins.
+    /// When set, highlights this closure's stretch and ramps. Its direction
+    /// takes precedence over `direction`.
     var closure: RoadClosure? = nil
-    /// Used when there is no closure (full-line overview) to orient the map.
+    /// Orients the map when `closure` is nil (full-line overview).
     var direction: Direction = .towardPozzuoli
     /// Hide exit names to render a denser rail.
     var showsNames: Bool = true
@@ -23,14 +17,14 @@ struct LinearMapView: View {
     private let nodeSize: CGFloat = 28
 
     private var roadColor: Color { .a56Open }
-    // Teal means open; every restriction is red. Its shape and text explain
-    // whether the problem affects the carriageway, an entrance, or an exit.
+    // Teal means open, red any restriction; the row content says whether the
+    // carriageway, an entrance or an exit is affected.
     private var highlight: Color {
         closure == nil ? .a56Open : .a56Issue
     }
     private var travelDirection: Direction { closure?.direction ?? direction }
 
-    /// Exits ordered so the driver's travel direction reads top → bottom.
+    /// Exits ordered so the travel direction reads top to bottom.
     private var orderedExits: [A56Exit] {
         if closure?.affectsBothDirections == true { return A56Line.exits }
         return travelDirection.goesUpTheLine ? A56Line.exits : Array(A56Line.exits.reversed())
@@ -101,7 +95,6 @@ struct LinearMapView: View {
         .frame(height: rowHeight)
     }
 
-    /// `true` if the exit number is inside the highlighted closed stretch.
     private func isWithin(_ number: Int) -> Bool {
         closure?.contains(exit: number) ?? false
     }

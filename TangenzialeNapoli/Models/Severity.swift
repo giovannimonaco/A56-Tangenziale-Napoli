@@ -1,13 +1,6 @@
-//
-//  Severity.swift
-//  TangenzialeNapoli
-//
-//  How disruptive a closure is. Drives colour and ordering in the UI.
-//
-
 import SwiftUI
 
-/// Severity of a closure. `rawValue` ordering is meaningful, so the type is
+/// How disruptive a closure is. `rawValue` ordering is meaningful, so the type is
 /// `Comparable` and can be used to sort or pick the most disruptive event.
 nonisolated enum Severity: Int, Codable, Hashable, CaseIterable, Identifiable, Comparable, Sendable {
     case low = 0        // a single ramp closed
@@ -53,7 +46,6 @@ nonisolated enum Severity: Int, Codable, Hashable, CaseIterable, Identifiable, C
 
     /// Derive severity from the facts of a closure instead of hand-assigning it.
     ///
-    /// The driver-facing logic is deliberately simple:
     /// - A blocked carriageway is always serious (`.high`), and `.critical`
     ///   when it is a tunnel or a long stretch.
     /// - A ramp-only closure is `.low` for one ramp, `.moderate` for several.

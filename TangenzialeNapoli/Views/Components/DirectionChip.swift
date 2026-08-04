@@ -1,11 +1,5 @@
-//
-//  DirectionChip.swift
-//  TangenzialeNapoli
-//
-
 import SwiftUI
 
-/// A pill showing travel direction with an arrow.
 struct DirectionChip: View {
     let direction: Direction
     var compact: Bool = false

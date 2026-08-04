@@ -1,10 +1,3 @@
-//
-//  ClosureDetailView.swift
-//  TangenzialeNapoli
-//
-//  A driver-first detail screen for one A56 restriction.
-//
-
 import SwiftUI
 
 struct ClosureDetailView: View {
@@ -212,9 +205,8 @@ struct ClosureDetailView: View {
         .detailSurface()
     }
 
-    /// The official notice can carry hints for both carriageways; show only
-    /// those valid for this closure's direction (all of them when the closure
-    /// affects both).
+    /// The official notice can carry hints for both carriageways; keep only
+    /// those valid for this closure's direction (all, when it affects both).
     private var relevantSuggestions: [AlternativeSuggestion]? {
         guard let all = closure.alternativeSuggestions else { return nil }
         let relevant = all.filter {

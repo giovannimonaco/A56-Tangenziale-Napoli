@@ -1,10 +1,3 @@
-//
-//  HomeView.swift
-//  TangenzialeNapoli
-//
-//  Current and future A56 restrictions on a stable west-to-east schematic.
-//
-
 import SwiftUI
 
 struct HomeView: View {
@@ -66,7 +59,7 @@ struct HomeView: View {
                 }
                 .refreshable { await viewModel.load() }
                 .onChange(of: direction) { _, newValue in
-                    AppLog.log("direction → \(newValue.shortName)", "ui")
+                    AppLog.log("direction -> \(newValue.shortName)", "ui")
                 }
                 .sheet(isPresented: $isInfoPresented) {
                     NavigationStack {
@@ -101,8 +94,8 @@ struct HomeView: View {
     }
 
     private var closureOverview: some View {
-        // Materialized once per render: `upcomingDays` does Calendar work for
-        // every closure, and three separate reads per body would repeat it.
+        // `upcomingDays` does Calendar work for every closure; compute it once
+        // per render instead of reading it three times.
         let scheduledDays = viewModel.upcomingDays(for: direction).filter { !$0.isEmpty }
         let scheduledCount = scheduledDays.reduce(0) { total, day in
             total + day.roadBlocks.count + day.rampClosures.count
@@ -346,8 +339,8 @@ struct HomeView: View {
                 isStatusKnown: false
             )
 
-            // The copy told users to retry; give them the control right here
-            // instead of the small toolbar icon only.
+            // The message above asks the user to retry, so offer the button
+            // here and not only in the toolbar.
             HStack(spacing: 14) {
                 Button {
                     guard !viewModel.isLoading else { return }
@@ -550,9 +543,8 @@ struct HomeView: View {
         return ClosureFormat.timeRange(closure)
     }
 
-    /// Compact variant for dense rows. Only whitespace is tightened: chopping
-    /// words produced ungrammatical Italian ("fino 06:00") in the most-read
-    /// rows of the screen.
+    /// Compact variant for dense rows. Only whitespace is tightened; dropping
+    /// words produced ungrammatical Italian ("fino 06:00").
     private func compactRowTime(
         _ closure: RoadClosure,
         active: Bool,
@@ -807,7 +799,7 @@ struct HomeView: View {
         }
     }
 
-    /// A partial refresh still IS a refresh: labelling it like the offline
+    /// A partial refresh is still a refresh; labelling it like the offline
     /// cache state pushes users to retry a fetch that already succeeded.
     private var freshnessLabel: String {
         if viewModel.isLoading { return "Aggiornamento in corso…" }

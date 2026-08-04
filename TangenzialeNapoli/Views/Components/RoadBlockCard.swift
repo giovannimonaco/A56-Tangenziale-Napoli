@@ -1,12 +1,6 @@
-//
-//  RoadBlockCard.swift
-//  TangenzialeNapoli
-//
-//  The serious one: the carriageway is closed and you cannot pass.
-//
-
 import SwiftUI
 
+/// Card for a fully closed stretch of carriageway.
 struct RoadBlockCard: View {
     let closure: RoadClosure
     /// When the closure is happening now, show "fino alle …" instead of the range.
@@ -16,10 +10,9 @@ struct RoadBlockCard: View {
     private var toName: String { A56Line.driverLabel(for: closure.toExit) }
     private var accent: Color { .a56Block }
 
-    /// "Esci a …" comes only from an official "Uscita consigliata" hint that
-    /// matches this carriageway. A re-entry hint or a hint for the opposite
-    /// direction phrased this way would point the driver at a ramp they cannot
-    /// use.
+    /// "Esci a …" only comes from an official "Uscita consigliata" hint for
+    /// this carriageway; a re-entry hint or one for the opposite direction
+    /// would point at a ramp the driver cannot use.
     private var alternativeText: String? {
         guard let alt = closure.recommendedExitBefore(for: closure.direction),
               let exit = A56Line.exit(alt) else { return nil }
