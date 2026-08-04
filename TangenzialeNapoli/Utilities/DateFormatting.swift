@@ -78,6 +78,25 @@ enum ClosureFormat {
         return "\(numeric) · \(capitalized)"
     }
 
+    /// When a timestamp was, for the data-status line: "alle 22:15" if today,
+    /// otherwise with an explicit day ("ieri alle 22:15", "01/08 alle 22:15").
+    /// A bare time would let three-day-old data pass for today's.
+    static func updateTimeLabel(_ date: Date, reference: Date = .now) -> String {
+        let calendar = Calendar.current
+        let time = date.formatted(.dateTime.hour().minute().locale(italian))
+        if calendar.isDate(date, inSameDayAs: reference) {
+            return "alle \(time)"
+        }
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: reference),
+           calendar.isDate(date, inSameDayAs: yesterday) {
+            return "ieri alle \(time)"
+        }
+        let day = date.formatted(
+            .dateTime.day(.twoDigits).month(.twoDigits).locale(italian)
+        )
+        return "\(day) alle \(time)"
+    }
+
     /// A relative bucket label for upcoming days, e.g. "Tra 2 giorni".
     static func relativeDayName(_ date: Date, reference: Date = .now) -> String {
         let cal = Calendar.current

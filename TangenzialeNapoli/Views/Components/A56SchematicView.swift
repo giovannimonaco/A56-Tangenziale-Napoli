@@ -14,8 +14,11 @@ struct A56SchematicView: View {
     var showsEndpointLabels = true
     var isStatusKnown = true
 
-    private let nodeDiameter: CGFloat = 20
-    private let lineWidth: CGFloat = 5
+    /// Node size and label follow Dynamic Type; at fixed sizes, raising the
+    /// system text size gave huge card text next to unreadable exit numbers.
+    @ScaledMetric(relativeTo: .caption2) private var nodeDiameter: CGFloat = 20
+    @ScaledMetric(relativeTo: .caption2) private var lineWidth: CGFloat = 5
+    @ScaledMetric(relativeTo: .caption2) private var nodeFontSize: CGFloat = 9
 
     /// A56Line is stored east → west; this screen reads west → east.
     private var orderedExits: [A56Exit] {
@@ -85,7 +88,7 @@ struct A56SchematicView: View {
     private func exitNode(_ exit: A56Exit) -> some View {
         let hasIssue = exitHasIssue(exit)
         return Text(exit.commercialNumber.map(String.init) ?? "I90")
-            .font(.system(size: 8, weight: .bold, design: .rounded))
+            .font(.system(size: nodeFontSize, weight: .bold, design: .rounded))
             .minimumScaleFactor(0.6)
             .foregroundStyle(.a56OnStatus)
             .frame(width: nodeDiameter, height: nodeDiameter)

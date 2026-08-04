@@ -9,8 +9,16 @@ import SwiftUI
 import Combine
 
 struct AppTabView: View {
-    private enum AppTab: Hashable {
+    private enum AppTab: String, Hashable {
         case closures, map
+    }
+
+    private static let lastTabKey = "lastSelectedTab"
+
+    /// People who live in the closure list should reopen the app there.
+    private static var storedTab: AppTab {
+        UserDefaults.standard.string(forKey: lastTabKey)
+            .flatMap(AppTab.init(rawValue:)) ?? .map
     }
 
     @State private var viewModel: ClosuresViewModel
@@ -42,11 +50,11 @@ struct AppTabView: View {
         _selectedTab = State(
             initialValue: CommandLine.arguments.contains("--show-closures")
                 ? .closures
-                : .map
+                : Self.storedTab
         )
 #else
         _viewModel = State(initialValue: viewModel ?? ClosuresViewModel())
-        _selectedTab = State(initialValue: .map)
+        _selectedTab = State(initialValue: Self.storedTab)
 #endif
     }
 
@@ -59,6 +67,7 @@ struct AppTabView: View {
                     now: viewModel.now,
                     lastUpdatedAt: mapDataTimestamp,
                     dataIsStale: viewModel.dataSource?.isStale ?? true,
+                    freshness: viewModel.freshness,
                     isLoading: viewModel.isLoading,
                     initialScope: mapInitialScope,
                     onReload: {
@@ -115,10 +124,13 @@ struct AppTabView: View {
             viewModel.refreshNow()
         }
         .onChange(of: scenePhase) { _, phase in
-            AppLog.log("scenePhase → \(phase)", "ui")
+            AppLog.log("scenePhase: \(phase)", "ui")
             if phase == .active {
                 Task { await viewModel.refreshIfStale() }
             }
+        }
+        .onChange(of: selectedTab) { _, tab in
+            UserDefaults.standard.set(tab.rawValue, forKey: Self.lastTabKey)
         }
     }
 

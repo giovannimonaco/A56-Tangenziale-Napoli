@@ -15,6 +15,7 @@ struct OverviewMapView: View {
     var now: Date = .now
     var lastUpdatedAt: Date?
     var dataIsStale = false
+    var freshness: ClosuresViewModel.Freshness?
     var isLoading = false
     let onReload: () async -> Void
 
@@ -30,6 +31,10 @@ struct OverviewMapView: View {
     @State private var scopePanelHeight: CGFloat = 180
     @Namespace private var mapScope
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Markers follow Dynamic Type: fixed 9–11pt labels were unreadable for
+    /// anyone who raises the system text size.
+    @ScaledMetric(relativeTo: .caption2) private var markerDiameter: CGFloat = 23
+    @ScaledMetric(relativeTo: .caption2) private var markerFontSize: CGFloat = 12
     @State private var camera: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 40.850, longitude: 14.190),
@@ -55,6 +60,7 @@ struct OverviewMapView: View {
         now: Date = .now,
         lastUpdatedAt: Date? = nil,
         dataIsStale: Bool = false,
+        freshness: ClosuresViewModel.Freshness? = nil,
         isLoading: Bool = false,
         initialScope: Scope = .now,
         onReload: @escaping () async -> Void = {}
@@ -64,6 +70,7 @@ struct OverviewMapView: View {
         self.now = now
         self.lastUpdatedAt = lastUpdatedAt
         self.dataIsStale = dataIsStale
+        self.freshness = freshness
         self.isLoading = isLoading
         self.onReload = onReload
         _scope = State(initialValue: initialScope)
@@ -153,12 +160,15 @@ struct OverviewMapView: View {
             }
 
         }
+        // No Apple traffic layer: its red congestion segments on and around
+        // the A56 are nearly identical to the red closure polylines, and a
+        // "closed" mark must stay unmistakable.
         .mapStyle(
             .standard(
                 elevation: .flat,
                 emphasis: .muted,
                 pointsOfInterest: .excludingAll,
-                showsTraffic: true
+                showsTraffic: false
             )
         )
         .mapControls {
@@ -220,17 +230,6 @@ struct OverviewMapView: View {
                 .padding(.horizontal, 10)
                 .padding(.bottom, 30)
         }
-//        .overlay(alignment: .bottomLeading) {
-//            Link("A56 © OpenStreetMap", destination: A56RouteGeometry.attributionURL)
-//                .font(.system(size: 8, weight: .medium))
-//                .foregroundStyle(.secondary)
-//                .padding(.horizontal, 5)
-//                .padding(.vertical, 3)
-//                .background(.regularMaterial, in: Capsule())
-//                .padding(.leading, 8)
-//                .padding(.bottom, 34)
-//                .accessibilityLabel("Tracciato A56 da OpenStreetMap")
-//        }
         .navigationTitle("Mappa A56")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -577,10 +576,14 @@ struct OverviewMapView: View {
 
     private func exitMarker(_ exit: A56Exit) -> some View {
         let label = exit.commercialNumber.map(String.init) ?? "I90"
-        let diameter: CGFloat = isOverviewZoom ? 18 : 23
+        let diameter: CGFloat = isOverviewZoom ? markerDiameter * 0.8 : markerDiameter
         let highlightsProblem = exitHasProblem(exit)
         return Text(label)
-            .font(.system(size: isOverviewZoom ? 9 : 11, weight: .bold, design: .rounded))
+            .font(.system(
+                size: isOverviewZoom ? markerFontSize * 0.85 : markerFontSize,
+                weight: .bold,
+                design: .rounded
+            ))
             .foregroundStyle(.a56OnStatus)
             .frame(
                 width: exit.commercialNumber == nil ? diameter + 10 : diameter,
@@ -687,6 +690,8 @@ struct OverviewMapView: View {
 
             if scope == .scheduled {
                 scheduledTimeControl
+            } else if let hint = imminentClosureHint {
+                imminentClosureRow(hint)
             }
 
             updateTimestamp
@@ -763,7 +768,7 @@ struct OverviewMapView: View {
         if initialFetchInProgress { return "Controllo in corso" }
         let relevant = statusClosures(for: candidate)
         guard !relevant.isEmpty else {
-            return dataIsStale ? "Nessuna segnalazione" : "Tutto aperto"
+            return dataIsStale ? "Nessuna chiusura nota" : "Tutto aperto"
         }
 
         let roadCount = relevant.filter { $0.kind == .roadBlocked }.count
@@ -780,13 +785,58 @@ struct OverviewMapView: View {
         return parts.joined(separator: " · ")
     }
 
+    private struct ImminentHint {
+        let start: Date
+        let count: Int
+    }
+
+    /// The typical check is "can I drive tonight?", often made in the
+    /// afternoon: with the "Adesso" scope showing an all-clear, a closure
+    /// starting a few hours later would be invisible without switching scope.
+    private var imminentClosureHint: ImminentHint? {
+        guard scope == .now else { return nil }
+        let horizon = now.addingTimeInterval(24 * 3600)
+        let imminent = closures.filter {
+            $0.matches(direction: direction) && $0.start > now && $0.start <= horizon
+        }
+        guard let earliest = imminent.map(\.start).min() else { return nil }
+        return ImminentHint(start: earliest, count: imminent.count)
+    }
+
+    private func imminentClosureRow(_ hint: ImminentHint) -> some View {
+        Button {
+            scope = .scheduled
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "calendar.badge.clock")
+                Text(
+                    "Prossima chiusura: \(relativeDayLabel(hint.start)) \(timeLabel(hint.start))"
+                    + (hint.count > 1 ? " · \(hint.count) chiusure" : "")
+                )
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.a56Caution)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.a56Caution.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(A56PressButtonStyle())
+        .accessibilityLabel(
+            "Prossima chiusura \(relativeDayLabel(hint.start)) alle \(timeLabel(hint.start)). Mostra le chiusure programmate"
+        )
+    }
+
     private var updateTimestamp: some View {
         HStack(spacing: 6) {
-            Image(
-                systemName: refreshInProgress
-                    ? "arrow.trianglehead.2.clockwise.rotate.90"
-                    : (dataIsStale ? "exclamationmark.triangle.fill" : "checkmark.seal.fill")
-            )
+            Image(systemName: updateTimestampIcon)
             Text(updateTimestampLabel)
         }
         .font(.caption2.weight(.semibold))
@@ -796,12 +846,33 @@ struct OverviewMapView: View {
         .accessibilityElement(children: .combine)
     }
 
+    private var updateTimestampIcon: String {
+        if refreshInProgress { return "arrow.trianglehead.2.clockwise.rotate.90" }
+        switch freshness {
+        case .fresh: return "checkmark.seal.fill"
+        case .partial: return "exclamationmark.circle.fill"
+        case .cache, .unavailable: return "exclamationmark.triangle.fill"
+        case nil: return dataIsStale ? "exclamationmark.triangle.fill" : "checkmark.seal.fill"
+        }
+    }
+
+    /// Same three-way copy as the Home status row: a partial refresh must not
+    /// read like the offline cache state.
     private var updateTimestampLabel: String {
         if refreshInProgress { return "Aggiornamento in corso…" }
-        guard let lastUpdatedAt else { return "Servizio non raggiungibile · verifica il gestore" }
-        return dataIsStale
-            ? "Dati non aggiornati · ultimo \(timeLabel(lastUpdatedAt))"
-            : "Aggiornato alle \(timeLabel(lastUpdatedAt))"
+        switch freshness {
+        case .fresh(let timestamp):
+            return "Aggiornato \(ClosureFormat.updateTimeLabel(timestamp, reference: now))"
+        case .partial(let timestamp):
+            return "Aggiornato \(ClosureFormat.updateTimeLabel(timestamp, reference: now)) · controllo parziale"
+        case .cache(let timestamp):
+            return "Dati non aggiornati · ultimo \(ClosureFormat.updateTimeLabel(timestamp, reference: now))"
+        case .unavailable, nil:
+            guard let lastUpdatedAt else { return "Servizio non raggiungibile · verifica il gestore" }
+            return dataIsStale
+                ? "Dati non aggiornati · ultimo \(ClosureFormat.updateTimeLabel(lastUpdatedAt, reference: now))"
+                : "Aggiornato \(ClosureFormat.updateTimeLabel(lastUpdatedAt, reference: now))"
+        }
     }
 
     @ViewBuilder
@@ -973,11 +1044,17 @@ struct OverviewMapView: View {
                 Button {
                     withAnimation(reduceMotion ? nil : .snappy) { selectedExitNumber = nil }
                 } label: {
+                    // 44pt touch target (the glyph alone is ~22pt); this is
+                    // the only way to dismiss the tray.
                     Image(systemName: "xmark.circle.fill")
                         .font(.title3)
                         .foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(A56PressButtonStyle())
+                .padding(.trailing, -10)
+                .padding(.vertical, -6)
                 .accessibilityLabel("Chiudi dettagli")
             }
 

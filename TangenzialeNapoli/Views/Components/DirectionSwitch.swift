@@ -98,8 +98,10 @@ struct DirectionSwitch: View {
             directionStatus.map { "\(direction.towardLabel), \($0.label)" }
                 ?? direction.towardLabel
         )
-        .accessibilityValue(isOn ? "Selezionata" : "Non selezionata")
+        // Selection is conveyed by the trait alone; a spoken "Selezionata"
+        // value on top made VoiceOver announce it twice.
         .accessibilityAddTraits(isOn ? [.isSelected] : [])
+        .accessibilityHint(isOn ? "" : "Mostra le chiusure \(direction.headingPhrase)")
     }
 }
 

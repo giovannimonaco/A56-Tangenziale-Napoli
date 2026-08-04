@@ -224,7 +224,7 @@ struct HomeView: View {
         needsVerification: Bool
     ) -> String {
         guard !closures.isEmpty else {
-            return needsVerification ? "Nessuna segnalazione" : "Tutto aperto"
+            return needsVerification ? "Nessuna chiusura nota" : "Tutto aperto"
         }
 
         let roadCount = closures.filter { $0.kind == .roadBlocked }.count
@@ -332,7 +332,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Nessun orario disponibile")
                         .font(.headline)
-                    Text("I dati non sono completi o aggiornati. Riprova e controlla i canali del gestore.")
+                    Text("I dati non sono completi o aggiornati.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -345,6 +345,30 @@ struct HomeView: View {
                 showsEndpointLabels: false,
                 isStatusKnown: false
             )
+
+            // The copy told users to retry; give them the control right here
+            // instead of the small toolbar icon only.
+            HStack(spacing: 14) {
+                Button {
+                    guard !viewModel.isLoading else { return }
+                    Task { await viewModel.load() }
+                } label: {
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Label("Riprova ora", systemImage: "arrow.clockwise")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.a56Open)
+
+                Link(destination: URL(string: "https://www.autostrade.it/it/previsioni?strada=A56")!) {
+                    Label("Sito del gestore", systemImage: "safari")
+                        .font(.subheadline.weight(.medium))
+                }
+            }
         }
         .a56Surface(accent: .a56Caution)
     }
@@ -432,7 +456,7 @@ struct HomeView: View {
 
     private func nowHeadline(hasRoadBlock: Bool, needsVerification: Bool) -> String {
         if needsVerification {
-            if activeNow.isEmpty { return "Nessuna segnalazione salvata" }
+            if activeNow.isEmpty { return "Nessuna chiusura nei dati salvati" }
             return hasRoadBlock ? "Interruzione segnalata" : "Accessi segnalati"
         }
         if activeNow.isEmpty { return "Percorso regolare" }
@@ -526,13 +550,15 @@ struct HomeView: View {
         return ClosureFormat.timeRange(closure)
     }
 
+    /// Compact variant for dense rows. Only whitespace is tightened: chopping
+    /// words produced ungrammatical Italian ("fino 06:00") in the most-read
+    /// rows of the screen.
     private func compactRowTime(
         _ closure: RoadClosure,
         active: Bool,
         scheduledDay: Date?
     ) -> String {
         rowTime(closure, active: active, scheduledDay: scheduledDay)
-            .replacingOccurrences(of: "fino alle ", with: "fino ")
             .replacingOccurrences(of: " – ", with: "–")
             .replacingOccurrences(of: " (+1)", with: " +1")
     }
@@ -762,12 +788,8 @@ struct HomeView: View {
 
     private func dataSourceRow(_ source: ClosuresViewModel.DataSource) -> some View {
         HStack(spacing: 6) {
-            Image(
-                systemName: viewModel.isLoading
-                    ? "arrow.trianglehead.2.clockwise.rotate.90"
-                    : (source.isStale ? "exclamationmark.triangle.fill" : "checkmark.seal.fill")
-            )
-            Text(updateTimestampLabel(for: source))
+            Image(systemName: freshnessIcon)
+            Text(freshnessLabel)
         }
         .font(.caption2.weight(.semibold))
         .foregroundStyle(source.isStale ? Color.a56Caution : Color.secondary)
@@ -776,19 +798,28 @@ struct HomeView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func updateTimestampLabel(
-        for source: ClosuresViewModel.DataSource
-    ) -> String {
+    private var freshnessIcon: String {
+        if viewModel.isLoading { return "arrow.trianglehead.2.clockwise.rotate.90" }
+        switch viewModel.freshness {
+        case .fresh: return "checkmark.seal.fill"
+        case .partial: return "exclamationmark.circle.fill"
+        case .cache, .unavailable, nil: return "exclamationmark.triangle.fill"
+        }
+    }
+
+    /// A partial refresh still IS a refresh: labelling it like the offline
+    /// cache state pushes users to retry a fetch that already succeeded.
+    private var freshnessLabel: String {
         if viewModel.isLoading { return "Aggiornamento in corso…" }
 
-        switch source {
-        case .live(let timestamp, _):
-            return source.isStale
-                ? "Dati non aggiornati · ultimo \(timestamp.formatted(date: .omitted, time: .shortened))"
-                : "Aggiornato alle \(timestamp.formatted(date: .omitted, time: .shortened))"
+        switch viewModel.freshness {
+        case .fresh(let timestamp):
+            return "Aggiornato \(ClosureFormat.updateTimeLabel(timestamp))"
+        case .partial(let timestamp):
+            return "Aggiornato \(ClosureFormat.updateTimeLabel(timestamp)) · controllo parziale"
         case .cache(let timestamp):
-            return "Dati non aggiornati · ultimo \(timestamp.formatted(date: .omitted, time: .shortened))"
-        case .unavailable:
+            return "Dati non aggiornati · ultimo \(ClosureFormat.updateTimeLabel(timestamp))"
+        case .unavailable, nil:
             return "Servizio non raggiungibile · verifica i canali del gestore"
         }
     }
