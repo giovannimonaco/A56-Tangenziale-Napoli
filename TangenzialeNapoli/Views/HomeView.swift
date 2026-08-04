@@ -100,22 +100,19 @@ struct HomeView: View {
         viewModel.activeClosures(for: direction)
     }
 
-    private var scheduledDays: [ClosuresViewModel.DirectionDay] {
-        viewModel.upcomingDays(for: direction).filter { !$0.isEmpty }
-    }
-
-    private var scheduledClosureCount: Int {
-        scheduledDays.reduce(0) { total, day in
+    private var closureOverview: some View {
+        // Materialized once per render: `upcomingDays` does Calendar work for
+        // every closure, and three separate reads per body would repeat it.
+        let scheduledDays = viewModel.upcomingDays(for: direction).filter { !$0.isEmpty }
+        let scheduledCount = scheduledDays.reduce(0) { total, day in
             total + day.roadBlocks.count + day.rampClosures.count
         }
-    }
 
-    private var closureOverview: some View {
-        ScrollView {
+        return ScrollView {
             LazyVStack(alignment: .leading, spacing: 18) {
                 nowPanel
 
-                scheduledSectionHeader
+                scheduledSectionHeader(count: scheduledCount)
 
                 if scheduledDays.isEmpty {
                     if dataIsStale {
@@ -401,17 +398,17 @@ struct HomeView: View {
         }
     }
 
-    private var scheduledSectionHeader: some View {
+    private func scheduledSectionHeader(count: Int) -> some View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .firstTextBaseline) {
                 scheduledSectionTitle
                 Spacer()
-                scheduledCountLabel
+                scheduledCountLabel(count: count)
             }
 
             VStack(alignment: .leading, spacing: 5) {
                 scheduledSectionTitle
-                scheduledCountLabel
+                scheduledCountLabel(count: count)
             }
         }
         .padding(.horizontal, 4)
@@ -425,9 +422,9 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private var scheduledCountLabel: some View {
-        if scheduledClosureCount > 0 {
-            Text("\(scheduledClosureCount) \(scheduledClosureCount == 1 ? "avviso" : "avvisi")")
+    private func scheduledCountLabel(count: Int) -> some View {
+        if count > 0 {
+            Text("\(count) \(count == 1 ? "chiusura" : "chiusure")")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
         }

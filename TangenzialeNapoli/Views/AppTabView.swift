@@ -19,6 +19,11 @@ struct AppTabView: View {
     @AppStorage("selectedDirection") private var direction: Direction = .towardPozzuoli
     @Environment(\.scenePhase) private var scenePhase
 
+    /// Stored once: a publisher built inside `body` would be replaced (and its
+    /// countdown restarted) on every render, so the tick could starve while
+    /// the user interacts with the app.
+    private let minuteTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+
     init(viewModel: ClosuresViewModel? = nil) {
 #if DEBUG
         let initialViewModel: ClosuresViewModel
@@ -106,7 +111,7 @@ struct AppTabView: View {
         .task {
             if viewModel.dataSource == nil { await viewModel.load() }
         }
-        .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { _ in
+        .onReceive(minuteTimer) { _ in
             viewModel.refreshNow()
         }
         .onChange(of: scenePhase) { _, phase in

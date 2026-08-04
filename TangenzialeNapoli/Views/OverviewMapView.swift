@@ -20,6 +20,7 @@ struct OverviewMapView: View {
 
     @State private var scope: Scope
     @State private var isReloading = false
+    @State private var cachedTimeWindows: [ClosureTimeWindow] = []
     @State private var selectedWindowID: String?
     @State private var selectedExitNumber: Int?
     @State private var visibleLongitudeDelta = 0.250
@@ -263,6 +264,7 @@ struct OverviewMapView: View {
         .onChange(of: scope) { _, _ in
             selectedWindowID = nil
             selectedExitNumber = nil
+            recomputeTimeWindows()
         }
         .onChange(of: direction) { _, _ in
             selectedExitNumber = nil
@@ -270,6 +272,9 @@ struct OverviewMapView: View {
                 setOverviewCamera(animated: false)
             }
         }
+        .onChange(of: closures) { _, _ in recomputeTimeWindows() }
+        .onChange(of: now) { _, _ in recomputeTimeWindows() }
+        .onAppear { recomputeTimeWindows() }
     }
 
     // MARK: - Time scope
@@ -301,29 +306,42 @@ struct OverviewMapView: View {
         }
     }
 
-    private var availableTimeWindows: [ClosureTimeWindow] {
-        guard scope == .scheduled else { return [] }
+    /// Cached: rebuilding these windows means running Calendar math for every
+    /// closure on every day, and the map body reads `scoped` once per
+    /// annotation. Recomputed via `onChange` on its actual inputs.
+    private var availableTimeWindows: [ClosureTimeWindow] { cachedTimeWindows }
+
+    private func recomputeTimeWindows() {
+        guard scope == .scheduled else {
+            cachedTimeWindows = []
+            return
+        }
         let calendar = Calendar.current
-        let upcoming = closures.filter { $0.start > now }
-        let grouped = Dictionary(grouping: upcoming) {
-            calendar.startOfDay(for: $0.start)
+        let relevant = closures.filter { $0.end > now }
+
+        // Day keys come from every day a closure touches, not just start
+        // days: a multi-day closure already in progress must keep producing
+        // windows for the days it still covers.
+        var dayKeys = Set<Date>()
+        for closure in relevant {
+            dayKeys.formUnion(closure.scheduleDays(notBefore: now, calendar: calendar))
         }
-        return grouped.map { day, _ in
-            let allClosuresForDay = closures.filter {
-                $0.end > now
-                    && $0.scheduleDays(notBefore: now, calendar: calendar).contains(day)
+
+        cachedTimeWindows = dayKeys
+            .map { day in
+                let ofDay = relevant
+                    .filter { $0.scheduleDays(notBefore: now, calendar: calendar).contains(day) }
+                    .sorted { $0.start < $1.start }
+                return ClosureTimeWindow(
+                    id: "night#\(Int(day.timeIntervalSince1970))",
+                    start: day,
+                    end: calendar.date(byAdding: .day, value: 1, to: day) ?? day,
+                    closures: ofDay
+                )
             }
-            let sorted = allClosuresForDay.sorted { $0.start < $1.start }
-            return ClosureTimeWindow(
-                id: "night#\(Int(day.timeIntervalSince1970))",
-                start: day,
-                end: calendar.date(byAdding: .day, value: 1, to: day) ?? day,
-                closures: sorted
-            )
-        }
-        .sorted { lhs, rhs in
-            lhs.start == rhs.start ? lhs.end < rhs.end : lhs.start < rhs.start
-        }
+            .sorted { lhs, rhs in
+                lhs.start == rhs.start ? lhs.end < rhs.end : lhs.start < rhs.start
+            }
     }
 
     private var selectedTimeWindow: ClosureTimeWindow? {
