@@ -11,8 +11,22 @@ nonisolated struct AlternativeSuggestion: Codable, Hashable, Sendable {
         case reentryAfter
     }
 
-    let exitNumber: Int
+    let exitNumber: Int?
+    let externalPlace: String?
     let kind: Kind
     /// Travel direction the suggestion applies to, when the notice states one.
     let direction: Direction?
+
+    init(exitNumber: Int? = nil, externalPlace: String? = nil, kind: Kind, direction: Direction?) {
+        self.exitNumber = exitNumber
+        self.externalPlace = externalPlace
+        self.kind = kind
+        self.direction = direction
+    }
+
+    var label: String? {
+        guard let exitNumber else { return externalPlace }
+        guard kind != .exitBefore || A56Line.exit(exitNumber)?.isEntranceOnly != true else { return nil }
+        return A56Line.interchangeLabel(for: exitNumber)
+    }
 }

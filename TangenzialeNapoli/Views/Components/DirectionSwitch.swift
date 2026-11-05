@@ -47,7 +47,7 @@ struct DirectionSwitch: View {
                         Image(systemName: direction.systemImage)
                     }
                     Text(direction.shortName)
-                        .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                         .minimumScaleFactor(0.82)
                     if direction == .towardCapodichino {
                         Image(systemName: direction.systemImage)
@@ -63,7 +63,7 @@ struct DirectionSwitch: View {
                             .frame(width: 7, height: 7)
                         Text(directionStatus.label)
                     }
-                    .lineLimit(1)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                     .minimumScaleFactor(0.72)
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(directionStatus.color)

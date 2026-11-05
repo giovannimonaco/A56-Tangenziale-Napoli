@@ -80,7 +80,7 @@ struct LinearMapView: View {
 
             if showsNames {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(exit.name)
+                    Text(exit.isEntranceOnly ? "\(exit.name) · \(exit.kindLabel)" : exit.name)
                         .font(.subheadline.weight(within ? .semibold : .regular))
                         .foregroundStyle(within ? .primary : .secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -124,7 +124,7 @@ struct LinearMapView: View {
                     )
                 }
                 .overlay {
-                    Text(exit.commercialNumber.map(String.init) ?? "I90")
+                    Text(exit.markerLabel)
                         .font(.caption2.weight(.bold))
                         .minimumScaleFactor(0.65)
                         .foregroundStyle(.a56OnStatus)
@@ -132,6 +132,9 @@ struct LinearMapView: View {
                 .shadow(color: (within ? highlight : roadColor).opacity(0.35), radius: 4)
         }
         .frame(width: railWidth)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(exit.interchangeLabel)
+        .accessibilityHidden(showsNames)
     }
 
     private func rampMarkers(_ ramps: [ClosureRampImpact]) -> some View {

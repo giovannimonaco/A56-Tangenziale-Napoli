@@ -5,12 +5,19 @@ import CoreLocation
 /// reference data, not something the closure feed provides.
 nonisolated enum A56Line {
 
+    // Carta dei Servizi 2026: km 8+500, solo entrata. Both carriageways
+    // are accessible from this point (Autostrade point ID 11221).
+    static let italia90 = A56Exit(
+        number: 11, commercialNumber: nil, name: "Italia ’90",
+        latitude: 40.835500, longitude: 14.178520, isEntranceOnly: true
+    )
+
     /// The 15 line points ordered east to west: 14 numbered exits plus the
     /// unnumbered Italia 90 access. `number` is the position on the schematic
     /// map, not the operator's exit number.
     static let exits: [A56Exit] = [
-        A56Exit(number: 1,  commercialNumber: 1,  name: "Aeroporto",                         latitude: 40.877416, longitude: 14.290162),
-        A56Exit(number: 2,  commercialNumber: 2,  name: "Capodichino / Secondigliano",       latitude: 40.873481, longitude: 14.285730),
+        A56Exit(number: 1,  commercialNumber: 1,  name: "Capodichino / Aeroporto",          latitude: 40.877416, longitude: 14.290162),
+        A56Exit(number: 2,  commercialNumber: 2,  name: "Secondigliano",                     latitude: 40.873481, longitude: 14.285730),
         A56Exit(number: 3,  commercialNumber: 3,  name: "Doganella / Piazza Carlo III / Centro storico", latitude: 40.872238, longitude: 14.279487),
         A56Exit(number: 4,  commercialNumber: 4,  name: "Corso Malta / Centro Direzionale / Stazione / Porto", latitude: 40.868987, longitude: 14.268787),
         A56Exit(number: 5,  commercialNumber: 5,  name: "Capodimonte / Rione Sanità",        latitude: 40.866842, longitude: 14.244290),
@@ -19,7 +26,7 @@ nonisolated enum A56Line {
         A56Exit(number: 8,  commercialNumber: 8,  name: "Camaldoli",                          latitude: 40.853916, longitude: 14.218658),
         A56Exit(number: 9,  commercialNumber: 9,  name: "Vomero / Posillipo",                 latitude: 40.846223, longitude: 14.216086),
         A56Exit(number: 10, commercialNumber: 10, name: "Fuorigrotta / Stadio / Edenlandia", latitude: 40.836695, longitude: 14.198734),
-        A56Exit(number: 11, commercialNumber: nil, name: "Italia 90",                         latitude: 40.835500, longitude: 14.178520),
+        italia90,
         A56Exit(number: 12, commercialNumber: 11, name: "Agnano / Ippodromo / Edenlandia",   latitude: 40.838462, longitude: 14.161218),
         A56Exit(number: 13, commercialNumber: 12, name: "Via Campana / Pozzuoli",             latitude: 40.839342, longitude: 14.114465),
         A56Exit(number: 14, commercialNumber: 13, name: "Cuma",                               latitude: 40.841446, longitude: 14.093234),
@@ -40,11 +47,7 @@ nonisolated enum A56Line {
 
     /// Full driver-facing interchange label for ramp closures.
     static func interchangeLabel(for number: Int) -> String {
-        guard let exit = exit(number) else { return "Svincolo non riconosciuto" }
-        if let commercialNumber = exit.commercialNumber {
-            return "Uscita \(commercialNumber) · \(exit.name)"
-        }
-        return "Accesso · \(exit.name)"
+        exit(number)?.interchangeLabel ?? "Svincolo non riconosciuto"
     }
 
     static var coordinates: [CLLocationCoordinate2D] {
@@ -72,27 +75,28 @@ nonisolated enum A56Line {
         1126: 8,      // Camaldoli
         1127: 9,      // Vomero
         1129: 10,     // Fuorigrotta
-        11221: 11,    // Italia 90
+        11221: italia90.number,
         1133: 12,     // Agnano
         11226: 13,    // Via Campana
         11223: 14,    // Cuma
         11227: 15,    // Pozzuoli / Arco Felice
+        11228: 15,    // Pozzuoli endpoint on the Arco Felice–Agnano segment
     ]
 
     /// Maps official names (which can differ from our labels) to line points.
     /// Keys are normalized (lowercased, accents stripped).
     private static let nameAliases: [String: Int] = [
-        "aeroporto": 1, "secondigliano-aeroporto": 1,
-        "capodichino": 2, "secondigliano": 2,
-        "doganella": 3,
-        "corso malta": 4, "viale maddalena": 4,   // Viale Maddalena: entrance near Corso Malta
+        "aeroporto": 1, "capodichino aeroporto": 1, "secondigliano aeroporto": 1,
+        "capodichino svincolo": 2, "secondigliano": 2,
+        "doganella": 3, "viale maddalena": 3, "viale umberto maddalena": 3,
+        "corso malta": 4,
         "capodimonte": 5, "rione sanita": 5,
         "arenella": 6, "quartieri spagnoli": 6,
         "zona ospedaliera": 7, "colli aminei": 7,
         "camaldoli": 8,
         "vomero": 9, "soccavo": 9, "pianura": 9,
         "fuorigrotta": 10, "stadio": 10, "bagnoli": 10,
-        "italia 90": 11,
+        "italia 90": italia90.number,
         "agnano": 12,
         "via campana": 13,
         "cuma": 14,
@@ -141,6 +145,19 @@ nonisolated enum A56Line {
                 .map(\.value)
         )
         return matches.count == 1 ? matches.first : nil
+    }
+
+    /// A detour may name local roads that include an exit's name. Only
+    /// recognized interchange names should become an A56 exit recommendation.
+    static func resolveSuggestedExit(named rawName: String) -> Int? {
+        var key = normalize(rawName)
+        if key.hasPrefix("svincolo ") { key = String(key.dropFirst("svincolo ".count)) }
+        switch key {
+        case "fine tangenziale napoli": return 1
+        case "doganella viale umberto maddalena": return 3
+        case "arco felice pozzuoli", "pozzuoli arco felice": return 15
+        default: return nameAliases[key]
+        }
     }
 
     /// Order two endpoints in travel direction; the `locpri`/`locsec` order

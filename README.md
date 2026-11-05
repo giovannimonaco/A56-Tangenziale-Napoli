@@ -16,10 +16,11 @@ L’app trasforma i flussi pubblici del gestore in una vista chiara dei tratti a
 - Chiusure in corso e programmate, divise per direzione
 - Distinzione tra tratti autostradali interrotti e rampe chiuse
 - Mappa MapKit interattiva con il tracciato reale della A56
+- Tab **Percorsi** con ricerca indirizzi, posizione facoltativa e confronto in auto con e senza Tangenziale
 - Schede dettagliate con orari, causa e svincoli interessati
-- Funzionamento offline basato sull’ultimo aggiornamento valido salvato sul dispositivo
-- Archivio locale con durata configurabile
-- Nessun account, permesso di localizzazione, sistema di analytics, pubblicità o chiave API
+- Avvisi salvati consultabili offline, con data e ora dell’ultimo aggiornamento disponibile
+- Archivio locale con durata configurabile e cancellazione dall’app
+- Nessun account, sistema di analytics, pubblicità o chiave API
 - Etichette di accessibilità e supporto a Riduci movimento
 
 ## Dettagli tecnici
@@ -50,13 +51,17 @@ Le informazioni provengono da due feed JSON pubblicamente accessibili, gli stess
 
 A ogni aggiornamento l’app valida i record A56, li associa alla topologia fissa degli svincoli e unisce programmazione ed eventi in corso senza perdere gli orari pubblicati. L’ultimo risultato valido resta salvato sul dispositivo, così le interruzioni temporanee della rete non lasciano l’app senza dati.
 
+L’app controlla anche la data di pubblicazione del feed e aggiorna periodicamente gli avvisi mentre è aperta. I dati incompleti o scaduti non confermano la percorribilità. Tutti gli orari si riferiscono a Napoli, anche se il dispositivo usa un altro fuso.
+
+Nel tab **Percorsi**, Mappe di Apple calcola le alternative e l’app verifica quali seguono la A56. Gli avvisi sono confrontati con i tratti, il senso di marcia e la durata prevista del viaggio. Una chiusura vicina a un ingresso o un’uscita stimati è segnalata come da verificare. Se Mappe non propone entrambe le alternative, l’app indica quale manca.
+
 L’integrazione non è ufficiale e i feed non costituiscono un’API pubblica documentata o garantita. L’app segnala chiaramente dati non aggiornati o incompleti e rimanda ai canali del gestore per la verifica.
 
 ## Esecuzione locale
 
 Requisiti:
 
-- macOS con Xcode 16 o successivo
+- macOS con Xcode 26 o successivo
 - simulatore o dispositivo con iOS 18 o successivo
 
 Clona la repository, apri `TangenzialeNapoli.xcodeproj` e compila lo schema `TangenzialeNapoli`. Per eseguire l’app su un dispositivo fisico, seleziona il tuo team di sviluppo nelle impostazioni del progetto. Il simulatore non richiede firma del codice o credenziali.
@@ -68,11 +73,15 @@ Per ottenere stati deterministici nelle build Debug sono disponibili questi argo
 - `--unavailable-data` mostra lo stato con dati non disponibili;
 - `--show-closures` apre l’elenco delle chiusure al posto della mappa.
 
+Su macOS, esegui `Tests/check-a56.sh` per verificare il mapping delle chiusure, il riconoscimento dei percorsi A56, la gestione di feed incompleti e il recupero dell’archivio.
+
 ## Privacy e sicurezza
 
-L’app non crea account, non richiede la posizione e non integra sistemi di analytics o pubblicità. Salva soltanto la direzione selezionata e una cache locale degli avvisi. I fornitori dei servizi di rete possono comunque ricevere normali informazioni di connessione, come l’indirizzo IP, secondo le rispettive informative sulla privacy.
+L’app non crea account e non integra sistemi di analytics o pubblicità. Chiede la posizione quando scegli **Usa la mia posizione** o tocchi una destinazione preferita per controllare il percorso. Mappe di Apple usa gli indirizzi e le coordinate per il calcolo. L’app salva sul dispositivo le destinazioni che aggiungi ai preferiti, le preferenze e una cache degli avvisi. I fornitori dei servizi di rete possono comunque ricevere normali informazioni di connessione, come l’indirizzo IP, secondo le rispettive informative sulla privacy.
 
 A56 Tangenziale Napoli è un progetto informativo indipendente. Non è affiliato, sponsorizzato o approvato da Autostrade per l’Italia o Tangenziale di Napoli. Le informazioni sul traffico possono essere in ritardo, incomplete o cambiare con breve preavviso. Prima di partire verifica sempre i canali ufficiali del gestore e segui la segnaletica, il personale e le autorità presenti sulla strada. Non interagire con l’app mentre guidi.
+
+[Informativa privacy](docs/privacy.md) · [Preparazione per App Store](docs/release.md)
 
 ## Attribuzioni e licenza
 

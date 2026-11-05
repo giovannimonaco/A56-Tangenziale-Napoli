@@ -2,18 +2,27 @@ import Foundation
 
 /// Measured quality of one network refresh. Counts are computed before rows
 /// are mapped, so an unsupported official event cannot disappear silently.
-struct ClosureDataQuality: Equatable, Sendable {
+nonisolated struct ClosureDataQuality: Equatable, Sendable {
     let plannedFeedAvailable: Bool
     let realtimeFeedAvailable: Bool
     let expectedRecords: Int
     let mappedRecords: Int
     let unresolvedRecords: [String]
     let topologyIssues: [String]
+    var mappedTimingIssues: [String] = []
 
     var mappingIsComplete: Bool {
+        mappingHasCompleteCoverage && mappedTimingIssues.isEmpty
+    }
+
+    private var mappingHasCompleteCoverage: Bool {
         expectedRecords == mappedRecords
             && unresolvedRecords.isEmpty
             && topologyIssues.isEmpty
+    }
+
+    var canAssessTrip: Bool {
+        plannedFeedAvailable && realtimeFeedAvailable && mappingHasCompleteCoverage
     }
 
     var isFullyVerified: Bool {
@@ -21,7 +30,7 @@ struct ClosureDataQuality: Equatable, Sendable {
     }
 }
 
-struct ClosureFetchResult: Sendable {
+nonisolated struct ClosureFetchResult: Sendable {
     let closures: [RoadClosure]
     let quality: ClosureDataQuality?
     /// Missing future rows can be treated as cancellations only after a
@@ -50,7 +59,7 @@ struct ClosureFetchResult: Sendable {
 /// The app talks to this protocol only, so the data source is replaceable:
 /// - `MockClosureProvider`: seeded data for previews and tests.
 /// - `LiveClosureProvider`: network feeds and parsing pipeline.
-protocol ClosureProvider: Sendable {
+nonisolated protocol ClosureProvider: Sendable {
     /// Returns all known upcoming closures. Implementations may hit the
     /// network, read a cache, or return seeded data.
     func fetchClosures() async throws -> ClosureFetchResult

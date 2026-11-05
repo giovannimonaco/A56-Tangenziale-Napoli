@@ -4,19 +4,6 @@ struct InfoView: View {
     let viewModel: ClosuresViewModel
     @Binding var direction: Direction
 
-    private let previsioniA56URL = URL(
-        string: "https://www.autostrade.it/it/previsioni?strada=A56"
-    )!
-    private let tangenzialeCampaniaURL = URL(
-        string: "https://www.tangenzialedinapoli.it/it/servizi/traffico/traffico-in-campania"
-    )!
-    private let autostradePrivacyURL = URL(
-        string: "https://www.autostrade.it/it/privacy/sito-web"
-    )!
-    private let appleMapsTermsURL = URL(
-        string: "https://www.apple.com/legal/internet-services/maps/terms-it.html"
-    )!
-
     private var appVersion: String {
         let info = Bundle.main.infoDictionary
         let short = info?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -39,7 +26,7 @@ struct InfoView: View {
         .navigationTitle("Info")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: RoadClosure.self) {
-            ClosureDetailView(closure: $0)
+            ClosureDetailView(closure: $0, viewModel: viewModel)
         }
     }
 
@@ -95,8 +82,8 @@ struct InfoView: View {
         Section("Come leggerla") {
             legendRow(
                 color: .a56Open,
-                title: "Percorribile",
-                detail: "tratto, entrata o uscita senza limitazioni note"
+                title: "Nessuna chiusura segnalata",
+                detail: "negli avvisi disponibili per la fascia selezionata"
             )
             legendRow(
                 color: .a56Block,
@@ -124,19 +111,19 @@ struct InfoView: View {
                 )
 
                 Text(
-                    "L’aggiornamento avviene all’apertura, al ritorno in primo piano "
-                    + "e con il pulsante di ricarica. Se la rete non è disponibile, "
-                    + "l’app indica chiaramente l’ultimo dato salvato."
+                    "Gli avvisi si aggiornano all’apertura, periodicamente mentre usi l’app "
+                    + "e con il pulsante di ricarica. Se non è possibile verificarli, l’app mostra "
+                    + "l’ultimo dato disponibile con un avviso. Gli orari si riferiscono a Napoli."
                 )
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             }
 
             Section("Verifica sul sito del gestore") {
-                Link(destination: previsioniA56URL) {
+                Link(destination: AppLinks.plannedNotices) {
                     Label("Previsioni A56 · Autostrade", systemImage: "safari")
                 }
-                Link(destination: tangenzialeCampaniaURL) {
+                Link(destination: AppLinks.liveTraffic) {
                     Label("Traffico in Campania · Tangenziale", systemImage: "safari")
                 }
             }
@@ -155,41 +142,56 @@ struct InfoView: View {
             NavigationLink {
                 privacyDetails
             } label: {
-                Label("Privacy", systemImage: "hand.raised")
+                Label("Informativa privacy", systemImage: "hand.raised")
             }
             NavigationLink {
                 legalDetails
             } label: {
                 Label("Fonti, licenze e indipendenza", systemImage: "doc.text")
             }
+            Link(destination: AppLinks.support) {
+                Label("Assistenza A56 Napoli", systemImage: "questionmark.circle")
+            }
         }
     }
 
     private var privacyDetails: some View {
         List {
-            Section {
+            Section("A56 Napoli · Giovanni Monaco") {
                 Text(
-                    "L’app non crea account, non richiede la posizione e non integra "
-                    + "sistemi di analytics o pubblicità."
+                    "L’app non richiede un account e non usa pubblicità, strumenti di analisi o tracciamento. "
+                    + "Lo sviluppatore non gestisce un server per ricevere dati dagli utenti."
                 )
-
-                Text(
-                    "Sul dispositivo salva soltanto la direzione scelta e una cache "
-                    + "tecnica degli avvisi. Per scaricare dati e cartografia comunica "
-                    + "con servizi esterni, che possono ricevere normali informazioni "
-                    + "di rete, come l’indirizzo IP, secondo le rispettive informative."
-                )
-                .font(.footnote)
-                .foregroundStyle(.secondary)
             }
-
-            Section {
-                Link(destination: autostradePrivacyURL) {
-                    Label("Privacy · Autostrade per l’Italia", systemImage: "safari")
-                }
+            Section("Posizione e percorsi") {
+                Text(
+                    "La posizione viene chiesta quando scegli «Usa la mia posizione» o tocchi un preferito per "
+                    + "controllare il percorso. Puoi anche inserire la partenza a mano o revocare l’accesso in "
+                    + "Impostazioni. Le ricerche di luoghi e gli estremi del percorso vengono inviati a Mappe di Apple. "
+                    + "Se apri l’itinerario in Google Maps, gli estremi e le eventuali tappe vengono inviati a Google per il calcolo. "
+                    + "L’app salva sul dispositivo solo le destinazioni che aggiungi ai preferiti. "
+                    + "Puoi rimuoverle dal tab Percorsi."
+                )
+                Link("Mappe di Apple e privacy", destination: AppLinks.appleMapsPrivacy)
+            }
+            Section("Avvisi e preferenze") {
+                Text(
+                    "Per scaricare gli avvisi, il dispositivo si collega ad Autostrade per l’Italia, "
+                    + "che può ricevere informazioni di connessione come l’indirizzo IP. Il dispositivo salva "
+                    + "le preferenze dell’app e gli avvisi per 10 giorni dalla fine delle chiusure, salvo modifica "
+                    + "della durata. Puoi cancellare gli avvisi da Info → Archivio locale."
+                )
+                Link("Informativa di Autostrade per l’Italia", destination: AppLinks.autostradePrivacy)
+            }
+            Section("Contatti") {
+                Link("Informativa privacy sul web", destination: AppLinks.privacyPolicy)
+                Link("Contatta lo sviluppatore", destination: AppLinks.support)
+                Text("Il canale di assistenza è pubblico: evita di inserire indirizzi, posizione o altri dati personali.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
-        .navigationTitle("Privacy")
+        .navigationTitle("Informativa privacy")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -208,7 +210,7 @@ struct InfoView: View {
                 Link(destination: A56RouteGeometry.attributionURL) {
                     Label("© OpenStreetMap contributors · ODbL", systemImage: "map")
                 }
-                Link(destination: appleMapsTermsURL) {
+                Link(destination: AppLinks.appleMapsTerms) {
                     Label("Condizioni d’uso · Mappe Apple", systemImage: "doc.text")
                 }
 

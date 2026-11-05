@@ -2,12 +2,12 @@ import Foundation
 
 /// Seeded closures for previews and tests. Each keeps a plausible Italian
 /// `sourceText` so parsing code has representative input.
-enum SampleClosures {
+nonisolated enum SampleClosures {
 
     /// Build the sample set anchored to the current date so the Home screen's
     /// Today / Tomorrow / Next-days sections are always populated.
     static func make(reference: Date = .now) -> [RoadClosure] {
-        let cal = Calendar.current
+        let cal = ClosureFormat.calendar
 
         // Helper: a Date at `dayOffset` days from today, at hour:minute.
         func at(_ dayOffset: Int, _ hour: Int, _ minute: Int = 0) -> Date {

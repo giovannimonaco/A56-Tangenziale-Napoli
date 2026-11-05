@@ -5,7 +5,7 @@ import Foundation
 ///
 /// Rows are decoded one by one: a malformed row (typically for another
 /// motorway) is dropped and counted instead of failing the whole feed.
-struct AutostradeFeed: Decodable, Sendable {
+nonisolated struct AutostradeFeed: Decodable, Sendable {
     let events: [AutostradeEvent]
     let undecodedEventCount: Int
 
@@ -25,7 +25,13 @@ struct AutostradeFeed: Decodable, Sendable {
         var dropped = 0
         while !rows.isAtEnd {
             if let event = try? rows.decode(AutostradeEvent.self) {
-                decoded.append(event)
+                // Without a road code we cannot tell whether a row belongs
+                // to the A56. Treat it as unreadable, not as another road.
+                if let code = event.roadCode, code == "A56" || !event.namesA56 {
+                    decoded.append(event)
+                } else {
+                    dropped += 1
+                }
             } else if (try? rows.decode(AnyRow.self)) != nil {
                 dropped += 1
             } else {
@@ -42,7 +48,7 @@ struct AutostradeFeed: Decodable, Sendable {
 /// One planned-event row. Only the fields we use are modelled, all optional
 /// so a schema change doesn't fail the whole decode. JSON keys are snake_case,
 /// decoded with `.convertFromSnakeCase`.
-struct AutostradeEvent: Decodable, Sendable {
+nonisolated struct AutostradeEvent: Decodable, Sendable {
     let cEle: String?          // stable id, e.g. "20260611_E23_SIV_P_00104_00001"
     let cStr: String?          // road code, e.g. "A56"
     let cDir: String?          // "N" -> Pozzuoli | "P" -> Capodichino | "B" -> both
@@ -64,9 +70,27 @@ struct AutostradeEvent: Decodable, Sendable {
     let finoAl: String?        // real-time end, e.g. "202607280400P02:303" (UTC + offset)
     let indisponibilita: [Window]?  // actual per-day closure windows
 
+    var roadCode: String? {
+        guard let code = cStr?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+              !code.isEmpty else { return nil }
+        return code
+    }
+
+    var namesA56: Bool {
+        let name = A56Line.normalize(tDesAut ?? "")
+        return name == "tangenziale di napoli" || name == "tangenziale napoli"
+    }
+
     struct Window: Decodable, Sendable {
-        let giorno: Int?
         let dIni: Double?      // window start, epoch milliseconds
         let dFin: Double?      // window end, epoch milliseconds
+
+        private enum CodingKeys: String, CodingKey { case dIni, dFin }
+
+        init(from decoder: Decoder) throws {
+            let fields = try? decoder.container(keyedBy: CodingKeys.self)
+            dIni = try? fields?.decode(Double.self, forKey: .dIni)
+            dFin = try? fields?.decode(Double.self, forKey: .dFin)
+        }
     }
 }

@@ -3,7 +3,7 @@ import Combine
 
 struct AppTabView: View {
     private enum AppTab: String, Hashable {
-        case closures, map
+        case closures, map, trips
     }
 
     private static let lastTabKey = "lastSelectedTab"
@@ -57,8 +57,6 @@ struct AppTabView: View {
                     closures: viewModel.closures,
                     direction: $direction,
                     now: viewModel.now,
-                    lastUpdatedAt: mapDataTimestamp,
-                    dataIsStale: viewModel.dataSource?.isStale ?? true,
                     freshness: viewModel.freshness,
                     isLoading: viewModel.isLoading,
                     initialScope: mapInitialScope,
@@ -69,7 +67,7 @@ struct AppTabView: View {
                     }
                 )
                     .navigationDestination(for: RoadClosure.self) { closure in
-                        ClosureDetailView(closure: closure)
+                        ClosureDetailView(closure: closure, viewModel: viewModel)
                     }
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
@@ -92,6 +90,14 @@ struct AppTabView: View {
                     Label("Chiusure", systemImage: "road.lanes")
                 }
                 .tag(AppTab.closures)
+
+            NavigationStack {
+                TripView(closures: viewModel)
+            }
+            .tabItem {
+                Label("Percorsi", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+            }
+            .tag(AppTab.trips)
         }
         .tint(.a56Open)
         .sheet(isPresented: $isInfoPresented) {
@@ -113,17 +119,29 @@ struct AppTabView: View {
             if viewModel.dataSource == nil { await viewModel.load() }
         }
         .onReceive(minuteTimer) { _ in
-            viewModel.refreshNow()
+            guard scenePhase == .active else { return }
+            Task { await refreshOnTimer() }
         }
         .onChange(of: scenePhase) { _, phase in
             AppLog.log("scenePhase: \(phase)", "ui")
             if phase == .active {
-                Task { await viewModel.refreshIfStale() }
+                Task { await refreshOnTimer() }
             }
         }
         .onChange(of: selectedTab) { _, tab in
             UserDefaults.standard.set(tab.rawValue, forKey: Self.lastTabKey)
         }
+    }
+
+    private func refreshOnTimer() async {
+#if DEBUG
+        let previewArguments = ["--sample-data", "--stale-sample-data", "--unavailable-data"]
+        if CommandLine.arguments.contains(where: previewArguments.contains) {
+            viewModel.refreshNow()
+            return
+        }
+#endif
+        await viewModel.refreshIfStale()
     }
 
     private var mapInitialScope: OverviewMapView.Scope {
@@ -134,15 +152,6 @@ struct AppTabView: View {
         }
 #endif
         return .now
-    }
-
-    private var mapDataTimestamp: Date? {
-        switch viewModel.dataSource {
-        case .live(let timestamp, _), .cache(let timestamp):
-            timestamp
-        case .unavailable, nil:
-            nil
-        }
     }
 }
 

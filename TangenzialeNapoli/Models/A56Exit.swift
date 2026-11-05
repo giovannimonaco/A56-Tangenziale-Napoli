@@ -7,9 +7,9 @@ import CoreLocation
 nonisolated struct A56Exit: Identifiable, Codable, Hashable, Sendable {
     /// Stable app position, 1...15.
     let number: Int
-    /// Number shown on road signage. Italia 90 is a distinct access point but
-    /// is not one of the 14 commercially numbered exits.
+    /// Number shown on road signage, when present.
     let commercialNumber: Int?
+    let isEntranceOnly: Bool
     /// Driver-facing sign name, e.g. "Capodimonte / Rione Sanità".
     let name: String
     let latitude: Double
@@ -26,8 +26,20 @@ nonisolated struct A56Exit: Identifiable, Codable, Hashable, Sendable {
         name.split(separator: "/").map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
+    var markerLabel: String { commercialNumber.map(String.init) ?? "I90" }
+
+    var kindLabel: String {
+        if isEntranceOnly { return "Solo ingresso" }
+        return commercialNumber.map { "Uscita \($0)" } ?? "Svincolo"
+    }
+
+    var interchangeLabel: String {
+        isEntranceOnly ? "Ingresso \(name)" : "\(kindLabel) · \(name)"
+    }
+
     /// Compact label matching road signage.
     var shortLabel: String {
+        if isEntranceOnly { return interchangeLabel }
         if let commercialNumber {
             return "\(commercialNumber) · \(destinations.first ?? name)"
         }
@@ -39,10 +51,12 @@ nonisolated struct A56Exit: Identifiable, Codable, Hashable, Sendable {
         commercialNumber: Int?,
         name: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        isEntranceOnly: Bool = false
     ) {
         self.number = number
         self.commercialNumber = commercialNumber
+        self.isEntranceOnly = isEntranceOnly
         self.name = name
         self.latitude = latitude
         self.longitude = longitude

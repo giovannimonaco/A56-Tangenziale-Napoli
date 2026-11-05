@@ -6,6 +6,7 @@ import Observation
 @MainActor
 @Observable
 final class ClosuresViewModel {
+    nonisolated static let freshnessLimit: TimeInterval = 5 * 60
 
     /// Where the currently displayed data came from.
     enum DataSource: Equatable {
@@ -13,12 +14,6 @@ final class ClosuresViewModel {
         case cache(Date)    // last good response, network unavailable
         case unavailable    // no trustworthy live or cached response
 
-        var isStale: Bool {
-            switch self {
-            case .live(_, let quality): !quality.isFullyVerified
-            case .cache, .unavailable: true
-            }
-        }
     }
 
     /// State for the status line. `partial` means the refresh succeeded but
@@ -27,22 +22,92 @@ final class ClosuresViewModel {
     /// worked.
     enum Freshness: Equatable {
         case fresh(Date)
-        case partial(Date)
+        case partial(Date, ClosureDataQuality)
+        case expired(Date)
         case cache(Date)
         case unavailable
+
+        var limitationTitle: String? {
+            switch self {
+            case .fresh: nil
+            case .partial(_, let quality):
+                if !quality.realtimeFeedAvailable { "Tempo reale assente" }
+                else if !quality.plannedFeedAvailable { "Programmazione assente" }
+                else if quality.canAssessTrip { "Orari discordanti" }
+                else { "Avvisi incompleti" }
+            case .expired: "Avvisi non aggiornati"
+            case .cache: "Avvisi salvati"
+            case .unavailable: "Avvisi indisponibili"
+            }
+        }
+
+        var limitationDetail: String? {
+            switch self {
+            case .fresh:
+                return nil
+            case .partial(_, let quality):
+                var details: [String] = []
+                if !quality.realtimeFeedAvailable {
+                    details.append("Mancano gli avvisi in tempo reale del gestore.")
+                }
+                if !quality.plannedFeedAvailable {
+                    details.append("Mancano gli avvisi sulle chiusure programmate.")
+                }
+                if quality.canAssessTrip {
+                    details.append("Alcuni avvisi riportano orari diversi. L’app considera la finestra più ampia.")
+                } else if !quality.mappingIsComplete {
+                    details.append("Alcuni avvisi sono incompleti o discordanti.")
+                }
+                return details.joined(separator: " ")
+            case .expired:
+                return "Ricarica per aggiornare gli avvisi del gestore."
+            case .cache:
+                return "L’aggiornamento non è riuscito. Vedi gli ultimi avvisi salvati sul dispositivo."
+            case .unavailable:
+                return "Gli avvisi del gestore non sono disponibili e non ci sono avvisi salvati."
+            }
+        }
+
+        func updateLabel(reference: Date) -> String {
+            switch self {
+            case .fresh(let date):
+                return "Aggiornato \(ClosureFormat.updateTimeLabel(date, reference: reference))"
+            case .partial(let date, _):
+                let time = ClosureFormat.updateTimeLabel(date, reference: reference)
+                return "\(limitationTitle ?? "Avvisi incompleti") · controllo \(time)"
+            case .expired(let date):
+                return "Avvisi non aggiornati · ultimo controllo \(ClosureFormat.updateTimeLabel(date, reference: reference))"
+            case .cache(let date):
+                return "Aggiornamento fallito · avvisi salvati \(ClosureFormat.updateTimeLabel(date, reference: reference))"
+            case .unavailable:
+                return "Avvisi del gestore indisponibili · nessun dato salvato"
+            }
+        }
     }
 
     var freshness: Freshness? {
         switch dataSource {
         case .live(let date, let quality):
-            quality.isFullyVerified ? .fresh(date) : .partial(date)
+            let age = now.timeIntervalSince(date)
+            if age < 0 || age >= Self.freshnessLimit { return .expired(date) }
+            return quality.isFullyVerified ? .fresh(date) : .partial(date, quality)
         case .cache(let date):
-            .cache(date)
+            return .cache(date)
         case .unavailable:
-            .unavailable
+            return .unavailable
         case nil:
-            nil
+            return nil
         }
+    }
+
+    var dataNeedsVerification: Bool {
+        if case .fresh = freshness { return false }
+        return true
+    }
+
+    var tripDataNeedsVerification: Bool {
+        if case .partial(_, let quality) = freshness { return !quality.canAssessTrip }
+        return dataNeedsVerification
     }
 
     /// One day for one direction, split into road blocks and ramp closures.
@@ -57,39 +122,56 @@ final class ClosuresViewModel {
 
     private let provider: ClosureProvider
     private let fallback: ClosureProvider
-    private let archive = ClosureArchive()
+    private let archive: ClosureArchive
+    private let clock: () -> Date
+    private var lastAttemptAt: Date?
 
     private(set) var closures: [RoadClosure] = []
     /// Rolling ~10-day archive, for the history screen and the offline fallback.
     private(set) var archivedClosures: [RoadClosure] = []
     private(set) var isLoading = false
+    private(set) var isClearingArchive = false
     private(set) var dataSource: DataSource?
     /// "Now" used to split active vs upcoming. Refreshed on load and by a timer.
-    private(set) var now: Date = .now
+    private(set) var now: Date
     /// When the live feed last loaded successfully (drives refresh-on-foreground).
     private(set) var lastLoadedAt: Date?
 
     /// Defaults to the live feed with an empty last resort: synthetic
     /// closures are reserved for previews and tests.
-    init(provider: ClosureProvider? = nil, fallback: ClosureProvider? = nil) {
+    init(
+        provider: ClosureProvider? = nil,
+        fallback: ClosureProvider? = nil,
+        archive: ClosureArchive = ClosureArchive(),
+        clock: @escaping () -> Date = { .now }
+    ) {
         self.provider = provider ?? LiveClosureProvider()
         self.fallback = fallback ?? EmptyClosureProvider()
+        self.archive = archive
+        self.clock = clock
+        self.now = clock()
     }
 
     func load() async {
-        guard !isLoading else {
+        guard !isLoading, !isClearingArchive else {
             AppLog.log("load() ignored: refresh already in progress", "vm")
             return
         }
         isLoading = true
-        now = Date()
+        refreshNow()
+        lastAttemptAt = now
         AppLog.log("load() start, now=\(now.formatted(date: .abbreviated, time: .standard))", "vm")
         defer { isLoading = false; logSummary(); dumpClosures() }
+
+        // Show the saved notices while the first network request is pending.
+        if dataSource == nil, let stored = await archive.snapshot(at: now) {
+            presentCache(stored)
+        }
 
         // 1. Try the live feed.
         do {
             let result = try await provider.fetchClosures()
-            let timestamp = Date()
+            let timestamp = clock()
             // The official feed only lists future windows: once a closure starts
             // it disappears from it. So the UI is driven by the rolling archive
             // (which retains closures seen while they were still upcoming), not
@@ -102,6 +184,7 @@ final class ClosuresViewModel {
                 canRevalidateActive: result.canRevalidateActive
             )
             closures = archivedClosures
+            refreshNow()
             dataSource = .live(
                 timestamp,
                 result.quality ?? ClosureDataQuality(
@@ -124,11 +207,15 @@ final class ClosuresViewModel {
         }
 
         // 2. Fall back to the accumulated on-device archive (last good data).
-        if let stored = await archive.load() {
-            closures = stored.closures.sorted { $0.start < $1.start }
-            archivedClosures = stored.closures
-            dataSource = .cache(stored.lastFetchedAt)
+        refreshNow()
+        if let stored = await archive.snapshot(at: now) {
+            presentCache(stored)
             AppLog.log("CACHE fallback: archived=\(closures.count)", "vm")
+            return
+        }
+        if let lastLoadedAt {
+            // A disk failure must not erase an already displayed snapshot.
+            dataSource = .cache(lastLoadedAt)
             return
         }
 
@@ -137,6 +224,12 @@ final class ClosuresViewModel {
         archivedClosures = []
         dataSource = .unavailable
         AppLog.log("UNAVAILABLE fallback", "vm")
+    }
+
+    private func presentCache(_ stored: ArchivedClosures) {
+        closures = stored.closures
+        archivedClosures = stored.closures
+        dataSource = .cache(stored.lastFetchedAt)
     }
 
     /// Per-closure dump, deduplicated by event, showing how each case got
@@ -153,8 +246,7 @@ final class ClosuresViewModel {
             let place = c.isRampOnly
                 ? A56Line.interchangeLabel(for: c.fromExit)
                 : "\(A56Line.driverLabel(for: c.fromExit)) to \(A56Line.driverLabel(for: c.toExit))"
-            let tunnel = c.sourceText.lowercased().contains("galleria") ? "tunnel-in-text" : "-"
-            AppLog.log("\(kind) | \(c.headline) | \(c.direction.shortName) | \(place) | sev=\(c.severity.displayName) | reason=\(c.reason) | \(tunnel)", "dump")
+            AppLog.log("\(kind) | \(c.headline) | \(c.direction.shortName) | \(place) | sev=\(c.severity.displayName) | reason=\(c.reason)", "dump")
         }
         #endif
     }
@@ -175,20 +267,22 @@ final class ClosuresViewModel {
 
     /// Re-evaluate "now" so the active/upcoming split stays correct while the
     /// app stays open (driven by a minute timer in the view).
-    func refreshNow() { now = Date() }
+    func refreshNow() { now = clock() }
 
     /// Called when the app returns to the foreground: re-fetch if the data is
     /// older than `maxAge`, otherwise just re-evaluate "now". Picks up closures
     /// added to the feed since the last load.
-    func refreshIfStale(maxAge: TimeInterval = 120) async {
+    func refreshIfStale(maxAge: TimeInterval = freshnessLimit) async {
+        refreshNow()
         guard !isLoading else { AppLog.log("refreshIfStale: skip (loading)", "vm"); return }
-        if let last = lastLoadedAt, Date().timeIntervalSince(last) < maxAge {
-            AppLog.log("refreshIfStale: fresh (age=\(Int(Date().timeIntervalSince(last)))s) -> refreshNow", "vm")
-            refreshNow()
-        } else {
-            AppLog.log("refreshIfStale: stale -> reload", "vm")
-            await load()
+        if let lastAttemptAt {
+            let age = now.timeIntervalSince(lastAttemptAt)
+            // Retry failed or partial requests on a later tick without
+            // hitting the service on every foreground transition.
+            let interval = dataNeedsVerification ? min(maxAge, 120) : maxAge
+            if age >= 0, age < interval { return }
         }
+        await load()
     }
 
     /// Re-apply the archive retention (no network) after the user changes the
@@ -196,14 +290,28 @@ final class ClosuresViewModel {
     func applyRetentionChange() {
         Task {
             archivedClosures = await archive.reprune(now: now)
-            closures = archivedClosures
             AppLog.log("retention applied, archived=\(archivedClosures.count)", "vm")
+        }
+    }
+
+    @discardableResult
+    func clearLocalArchive() async -> Bool {
+        guard !isLoading, !isClearingArchive else { return false }
+        isClearingArchive = true
+        defer { isClearingArchive = false }
+        do {
+            try await archive.clear()
+            archivedClosures = []
+            return true
+        } catch {
+            AppLog.log("archive deletion failed: \(error.localizedDescription)", "arch")
+            return false
         }
     }
 
     // MARK: - Direction-scoped grouping
 
-    private var calendar: Calendar { .current }
+    private var calendar: Calendar { ClosureFormat.calendar }
 
     /// Closures active at `now` for this direction. Shown even when they began
     /// before midnight, the common case for overnight (23:00–06:00) closures
@@ -285,7 +393,7 @@ final class ClosuresViewModel {
                 topologyIssues: []
             )
         )
-        viewModel.lastLoadedAt = .now
+        viewModel.lastAttemptAt = .now
         return viewModel
     }
 
@@ -303,7 +411,7 @@ final class ClosuresViewModel {
         viewModel.closures = []
         viewModel.archivedClosures = []
         viewModel.dataSource = .unavailable
-        viewModel.lastLoadedAt = .now
+        viewModel.lastAttemptAt = .now
         return viewModel
     }
     #endif

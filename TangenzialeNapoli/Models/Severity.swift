@@ -21,7 +21,7 @@ nonisolated enum Severity: Int, Codable, Hashable, CaseIterable, Identifiable, C
 
     /// Graduated for the badge: a "Bassa" pill in alarm red said the opposite
     /// of its own text. Map and schematic keep their single closure colour.
-    var color: Color {
+    @MainActor var color: Color {
         switch self {
         case .low:            .secondary
         case .moderate:       .a56Caution

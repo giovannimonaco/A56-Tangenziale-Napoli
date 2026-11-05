@@ -7,6 +7,8 @@ struct StoricoView: View {
     @Binding var direction: Direction
 
     @AppStorage(ClosureArchive.retentionKey) private var retentionDays = ClosureArchive.defaultRetentionDays
+    @State private var confirmsDeletion = false
+    @State private var showsDeletionError = false
 
     private var days: [ClosuresViewModel.DirectionDay] { viewModel.pastDays(for: direction) }
 
@@ -37,6 +39,18 @@ struct StoricoView: View {
         .background(Color.a56Canvas)
         .navigationTitle("Archivio locale")
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog("Eliminare l’archivio locale?", isPresented: $confirmsDeletion, titleVisibility: .visible) {
+            Button("Elimina archivio", role: .destructive) {
+                Task { showsDeletionError = !(await viewModel.clearLocalArchive()) }
+            }
+        } message: {
+            Text("Gli avvisi disponibili verranno salvati di nuovo al prossimo aggiornamento.")
+        }
+        .alert("Archivio non eliminato", isPresented: $showsDeletionError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Attendi la fine dell’aggiornamento e riprova.")
+        }
         // Re-apply the new duration to the stored archive immediately (no network).
         .onChange(of: retentionDays) { _, _ in viewModel.applyRetentionChange() }
     }
@@ -55,6 +69,10 @@ struct StoricoView: View {
             Text("Raccolta tecnica salvata su questo dispositivo: non è uno storico ufficiale o completo.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Button("Elimina archivio locale", role: .destructive) { confirmsDeletion = true }
+                .font(.subheadline.weight(.semibold))
+                .frame(minHeight: 44, alignment: .leading)
+                .disabled(viewModel.isLoading || viewModel.isClearingArchive)
         }
         .a56Surface(radius: 16)
     }

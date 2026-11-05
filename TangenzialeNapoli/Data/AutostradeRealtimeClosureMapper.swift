@@ -29,10 +29,9 @@ nonisolated enum AutostradeRealtimeClosureMapper {
         from events: [AutostradeEvent],
         now: Date = .now
     ) -> MappingReport {
-        let a56 = events.filter { $0.cStr == AutostradeClosureMapper.roadCode }
+        let a56 = events.filter { $0.roadCode == AutostradeClosureMapper.roadCode }
         let relevant = a56.filter {
-            $0.cGrpTip == "C"
-                && AutostradeClosureMapper.eventKind($0) != nil
+            AutostradeClosureMapper.eventKind($0) != nil
                 && (endDate($0).map { $0 > now } ?? true)
         }
         let unrecognized = a56.filter {
@@ -43,15 +42,18 @@ nonisolated enum AutostradeRealtimeClosureMapper {
         var closures: [RoadClosure] = []
         var issues: [AutostradeClosureMapper.MappingIssue] = []
         for event in relevant {
-            let hasConflict = A56Line.hasResolutionConflict(
-                pointID: event.cPntDtxPlsPri,
-                named: event.locpri
-            ) || A56Line.hasResolutionConflict(
-                pointID: event.cPntDtxPlsSec,
-                named: event.locsec
-            )
-            if let mapped = closure(from: event, now: now), !hasConflict {
+            if let mapped = closure(from: event, now: now) {
                 closures.append(mapped)
+                if mapped.reportedWindow != nil {
+                    var timing = issue(for: event)
+                    timing.detail = "Orari discordanti"
+                    timing.coveredByMappedWindow = true
+                    issues.append(timing)
+                } else if mapped.hasUnpublishedEnd == true, event.finoAl?.isEmpty == false {
+                    var timing = issue(for: event)
+                    timing.detail = "Fine non leggibile"
+                    issues.append(timing)
+                }
             } else {
                 issues.append(issue(for: event))
             }
@@ -79,12 +81,13 @@ nonisolated enum AutostradeRealtimeClosureMapper {
         now: Date
     ) -> RoadClosure? {
         guard let kind = AutostradeClosureMapper.eventKind(event),
-              let end = endDate(event),
-              end > now
-        else { return nil }
+              let direction = AutostradeClosureMapper.primaryDirection(event) else { return nil }
+        let start = activationDate(event, now: now)
+        let ends = publishedEnds(event)
+        let end = ends.max() ?? .distantFuture
+        guard start <= now, end > now else { return nil }
 
         let bothDirections = AutostradeClosureMapper.isBothDirections(event)
-        let direction = AutostradeClosureMapper.primaryDirection(event)
         let fromExit: Int
         let toExit: Int
         let rampImpacts: [ClosureRampImpact]
@@ -92,32 +95,17 @@ nonisolated enum AutostradeRealtimeClosureMapper {
 
         switch kind {
         case .segment:
-            // Fallback for the occasional live row whose location fields are
-            // incomplete: "Tratto Chiuso tra Agnano e Cuma fino alle …".
-            let noticeExits = NoticeText.segmentEndpoints(in: event.tDesIt ?? "")
-            guard let first = A56Line.resolveExit(
-                pointID: event.cPntDtxPlsPri,
-                named: event.locpri
-            ) ?? noticeExits?.0,
-                  let second = A56Line.resolveExit(
-                    pointID: event.cPntDtxPlsSec,
-                    named: event.locsec
-                  ) ?? noticeExits?.1
-            else { return nil }
+            guard let (first, second) = AutostradeClosureMapper.segmentEndpoints(event) else { return nil }
             (fromExit, toExit) = A56Line.orderedEndpoints(first, second, direction: direction)
             rampImpacts = []
             isFullClosure = true
 
-        case .ramp(let rampKind):
-            guard let exit = A56Line.resolveExit(
-                pointID: event.cPntDtxPlsPri,
-                named: event.locpri
-            ) else { return nil }
+        case .ramp, .bothRamps:
+            guard let exit = AutostradeClosureMapper.rampExit(event) else { return nil }
             fromExit = exit
             toExit = exit
-            rampImpacts = [
-                ClosureRampImpact(exitNumber: exit, kind: rampKind, direction: direction)
-            ]
+            rampImpacts = AutostradeClosureMapper.validRampImpacts(for: kind, at: exit, direction: direction)
+            guard !rampImpacts.isEmpty else { return nil }
             isFullClosure = false
         }
 
@@ -130,19 +118,21 @@ nonisolated enum AutostradeRealtimeClosureMapper {
                 direction: direction,
                 end: end
             ),
-            start: activationDate(event, now: now),
+            start: start,
             end: end,
             direction: direction,
             affectsBothDirections: bothDirections,
             fromExit: fromExit,
             toExit: toExit,
             rampImpacts: rampImpacts,
-            reason: nonEmpty(event.tDesFraCauIt) ?? "Lavori",
-            suggestedAlternatives: suggestions.map(\.exitNumber),
+            reason: event.tDesFraCauIt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            suggestedAlternatives: suggestions.compactMap(\.exitNumber),
             alternativeSuggestions: suggestions,
             isFullClosure: isFullClosure,
             sourceText: event.tDesIt ?? "",
-            evidence: .realtime
+            evidence: .realtime,
+            reportedWindow: ends.min().flatMap { $0 < end ? .init(start: start, end: $0) : nil },
+            hasUnpublishedEnd: ends.isEmpty ? true : nil
         )
     }
 
@@ -165,42 +155,34 @@ nonisolated enum AutostradeRealtimeClosureMapper {
         direction: Direction,
         end: Date
     ) -> String {
-        let kindKey = { if case .segment = kind { return "seg" } else { return "ramp" } }()
-        return "live_\(kindKey)_\(fromExit)-\(toExit)_\(direction.rawValue)_\(Int(end.timeIntervalSince1970))"
+        let ramps = AutostradeClosureMapper.rampKinds(kind).map(\.rawValue).joined(separator: "+")
+        return "live_\(ramps)_\(fromExit)-\(toExit)_\(direction.rawValue)_\(Int(end.timeIntervalSince1970))"
     }
 
     // MARK: - Dates
 
-    /// When the closure started. `d_agg` moves forward on every editorial
-    /// update of the row, so prefer the creation day encoded in `c_ele`
-    /// combined with the "dalle ore HH:MM" time from the notice, when present.
+    /// Use a published start if present. The row ID can predate the closure.
+    /// Otherwise the update time is only the first observed reference time.
     private static func activationDate(_ event: AutostradeEvent, now: Date) -> Date {
-        if let raw = event.cEle, raw.count >= 8,
-           let creationDay = creationDayFormatter.date(from: String(raw.prefix(8))),
-           let time = NoticeText.startTime(in: event.tDesIt ?? "") {
-            var calendar = Calendar(identifier: .gregorian)
-            calendar.timeZone = TimeZone(identifier: "Europe/Rome") ?? .current
-            if let composed = calendar.date(
-                bySettingHour: time.hour,
-                minute: time.minute,
-                second: 0,
-                of: creationDay
-            ) {
-                return min(composed, now)
-            }
-        }
-        guard let milliseconds = event.dAgg else { return now }
-        return min(Date(timeIntervalSince1970: milliseconds / 1000), now)
+        if let start = AutostradeClosureMapper.sanitizedDate(event.dSta) { return start }
+        if let bounds = NoticeText.plannedBounds(in: event.tDesIt ?? "") { return bounds.start }
+        return min(AutostradeClosureMapper.sanitizedDate(event.dAgg) ?? now, now)
     }
 
     /// `fino_al` stores a 12-digit UTC timestamp followed by the local offset,
     /// for example 04:00 UTC +02 for the driver-facing 06:00 in Naples.
     private static func endDate(_ event: AutostradeEvent) -> Date? {
-        if let raw = event.finoAl,
-           let parsed = finoAlFormatter.date(from: String(raw.prefix(12))) {
-            return parsed
+        publishedEnds(event).max()
+    }
+
+    private static func publishedEnds(_ event: AutostradeEvent) -> [Date] {
+        let structured = event.finoAl.flatMap { raw -> Date? in
+            let timestamp = String(raw.prefix(12))
+            guard timestamp.count == 12, let parsed = finoAlFormatter.date(from: timestamp),
+                  finoAlFormatter.string(from: parsed) == timestamp else { return nil }
+            return AutostradeClosureMapper.sanitizedDate(parsed.timeIntervalSince1970 * 1000)
         }
-        return NoticeText.endDate(in: event.tDesIt ?? "")
+        return [structured, NoticeText.endDate(in: event.tDesIt ?? "")].compactMap { $0 }
     }
 
     /// Formatters are expensive to build, and the mapper runs on every row of
@@ -215,17 +197,4 @@ nonisolated enum AutostradeRealtimeClosureMapper {
         return formatter
     }()
 
-    private static let creationDayFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.timeZone = TimeZone(identifier: "Europe/Rome")
-        formatter.dateFormat = "yyyyMMdd"
-        return formatter
-    }()
-
-    private static func nonEmpty(_ value: String?) -> String? {
-        guard let value, !value.isEmpty else { return nil }
-        return value
-    }
 }

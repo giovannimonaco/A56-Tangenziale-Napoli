@@ -1,8 +1,25 @@
 import SwiftUI
 
 struct ClosureDetailView: View {
-    let closure: RoadClosure
+    private let selectedClosure: RoadClosure
+    private let viewModel: ClosuresViewModel?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    init(closure: RoadClosure, viewModel: ClosuresViewModel? = nil) {
+        selectedClosure = closure
+        self.viewModel = viewModel
+    }
+
+    private var currentNotice: RoadClosure? {
+        viewModel?.closures.first { $0.id == selectedClosure.id }
+    }
+
+    private var closure: RoadClosure { currentNotice ?? selectedClosure }
+    private var isPast: Bool { closure.end <= (viewModel?.now ?? .now) }
+    private var needsVerification: Bool {
+        guard let viewModel, !isPast else { return false }
+        return currentNotice == nil || viewModel.dataNeedsVerification || closure.reportedWindow != nil
+    }
 
     private var accent: Color { .a56Block }
 
@@ -13,7 +30,7 @@ struct ClosureDetailView: View {
                 whenCard
                 routeCard
 
-                if !closure.suggestedAlternatives.isEmpty {
+                if !relevantSuggestions.isEmpty || (closure.alternativeSuggestions == nil && !closure.suggestedAlternatives.isEmpty) {
                     alternativesCard
                 }
 
@@ -33,7 +50,14 @@ struct ClosureDetailView: View {
         VStack(alignment: .leading, spacing: 14) {
             heroHeading
 
-            Text(guidanceText)
+            if needsVerification {
+                Label("Avviso da verificare. Consulta il gestore prima di partire.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.a56Caution)
+            }
+
+            Text(isPast ? "Avviso storico. Consulta il gestore per lo stato attuale." : guidanceText)
                 .font(.body.weight(.medium))
                 .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -102,12 +126,12 @@ struct ClosureDetailView: View {
                 if dynamicTypeSize.isAccessibilitySize {
                     VStack(alignment: .leading, spacing: 12) {
                         valueColumn(
-                            label: "Giorno",
+                            label: closure.evidence == .realtime ? "Giorno di riferimento" : "Giorno",
                             value: ClosureFormat.dayLabel(closure.start)
                         )
                         Divider()
                         valueColumn(
-                            label: "Orario",
+                            label: "Orario di Napoli",
                             value: displayedTime,
                             monospaced: true
                         )
@@ -115,7 +139,7 @@ struct ClosureDetailView: View {
                 } else {
                     HStack(spacing: 0) {
                         valueColumn(
-                            label: "Giorno",
+                            label: closure.evidence == .realtime ? "Giorno di riferimento" : "Giorno",
                             value: ClosureFormat.dayLabel(closure.start)
                         )
 
@@ -124,12 +148,21 @@ struct ClosureDetailView: View {
                             .padding(.horizontal, 14)
 
                         valueColumn(
-                            label: "Orario",
+                            label: "Orario di Napoli",
                             value: displayedTime,
                             monospaced: true
                         )
                     }
                 }
+            }
+            if let reported = closure.reportedWindow {
+                let start = ClosureFormat.timeLabel(reported.start)
+                let end = ClosureFormat.timeLabel(reported.end)
+                Text(closure.hasUnpublishedEnd == true
+                     ? "Fascia programmata \(start)–\(end). Il feed in tempo reale non indica la fine."
+                     : "Un campo dell’avviso indica \(start)–\(end). Verifica l’orario sul sito del gestore.")
+                    .font(.footnote)
+                    .foregroundStyle(.a56Caution)
             }
         }
         .detailSurface()
@@ -179,17 +212,18 @@ struct ClosureDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("Alternativa consigliata", systemImage: "arrow.turn.up.right")
 
-            if let suggestions = relevantSuggestions {
-                ForEach(Array(suggestions.enumerated()), id: \.offset) { _, suggestion in
-                    alternativeRow(
-                        icon: suggestion.kind == .exitBefore
-                            ? "arrow.turn.down.right"
-                            : "arrow.turn.up.right",
-                        title: A56Line.interchangeLabel(for: suggestion.exitNumber),
-                        subtitle: suggestion.kind == .exitBefore
-                            ? "Esci qui prima della chiusura"
-                            : "Rientra da qui dopo la chiusura"
-                    )
+            if closure.alternativeSuggestions != nil {
+                ForEach(Array(relevantSuggestions.enumerated()), id: \.offset) { _, suggestion in
+                    if let title = suggestion.label {
+                        alternativeRow(
+                            icon: suggestion.kind == .exitBefore
+                                ? "arrow.turn.down.right"
+                                : "arrow.turn.up.right",
+                            title: title,
+                            subtitle: (suggestion.kind == .exitBefore ? "Uscita indicata" : "Ingresso indicato")
+                                + (suggestion.direction.map { " · \($0.towardLabel)" } ?? "")
+                        )
+                    }
                 }
             } else {
                 // Archives saved by older builds carry only the exit numbers.
@@ -207,14 +241,12 @@ struct ClosureDetailView: View {
 
     /// The official notice can carry hints for both carriageways; keep only
     /// those valid for this closure's direction (all, when it affects both).
-    private var relevantSuggestions: [AlternativeSuggestion]? {
-        guard let all = closure.alternativeSuggestions else { return nil }
-        let relevant = all.filter {
-            closure.affectsBothDirections
+    private var relevantSuggestions: [AlternativeSuggestion] {
+        (closure.alternativeSuggestions ?? []).filter {
+            $0.label != nil && (closure.affectsBothDirections
                 || $0.direction == nil
-                || $0.direction == closure.direction
+                || $0.direction == closure.direction)
         }
-        return relevant.isEmpty ? nil : relevant
     }
 
     private func alternativeRow(
@@ -257,19 +289,8 @@ struct ClosureDetailView: View {
                 .font(.subheadline)
             }
 
-            if !closure.sourceText.isEmpty {
-                Divider()
-
-                DisclosureGroup("Comunicato ufficiale") {
-                    Text(closure.sourceText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                        .padding(.top, 8)
-                }
+            Link("Consulta gli avvisi del gestore", destination: AppLinks.plannedNotices)
                 .font(.subheadline.weight(.semibold))
-                .tint(.secondary)
-            }
         }
         .detailSurface()
     }
@@ -374,35 +395,35 @@ struct ClosureDetailView: View {
     private var guidanceText: String {
         switch closure.kind {
         case .roadBlocked:
-            return "Non puoi percorrere la tangenziale tra \(A56Line.driverLabel(for: closure.fromExit)) e \(A56Line.driverLabel(for: closure.toExit))."
+            return "L’avviso segnala la chiusura del tratto tra \(A56Line.driverLabel(for: closure.fromExit)) e \(A56Line.driverLabel(for: closure.toExit))."
         case .rampsClosed:
             let exitName = A56Line.driverLabel(for: closure.rampExitNumber)
             let action: String
             if !closure.closedEntrances.isEmpty && !closure.closedExits.isEmpty {
-                action = "non puoi né entrare né uscire"
+                action = "entrata e uscita chiuse"
             } else if !closure.closedEntrances.isEmpty {
-                action = "non puoi entrare"
+                action = "entrata chiusa"
             } else {
-                action = "non puoi uscire"
+                action = "uscita chiusa"
             }
-            return "La tangenziale resta percorribile, ma a \(exitName) \(action)."
+            return "L’avviso segnala: \(exitName), \(action)."
         }
     }
 
     private var displayedTime: String {
         closure.evidence == .realtime
-            ? ClosureFormat.endLabel(closure)
+            ? ClosureFormat.endLabel(closure, reference: viewModel?.now ?? .now)
             : ClosureFormat.timeRange(closure)
     }
 
     private var evidenceText: String {
         switch closure.evidence {
         case .realtimeConfirmed:
-            "Programmazione confermata anche in tempo reale"
+            "Avviso comparso nella programmazione e nel feed in tempo reale"
         case .realtime:
-            "Presente nel feed ufficiale in tempo reale"
+            "Avviso ricevuto dal feed in tempo reale"
         case .scheduled, .none:
-            "Presente nella programmazione ufficiale"
+            "Avviso ricevuto dalla programmazione del gestore"
         }
     }
 

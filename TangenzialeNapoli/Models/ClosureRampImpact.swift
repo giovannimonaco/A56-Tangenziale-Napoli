@@ -45,6 +45,10 @@ nonisolated struct ClosureRampImpact: Identifiable, Codable, Hashable, Sendable 
     /// Short label for a chip, e.g. "Uscita chiusa".
     var shortLabel: String { "\(kind.displayName) chiusa" }
 
+    var existsAtInterchange: Bool {
+        kind != .exit || A56Line.exit(exitNumber)?.isEntranceOnly != true
+    }
+
     init(
         exitNumber: Int,
         kind: Kind,

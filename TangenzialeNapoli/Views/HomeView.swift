@@ -22,7 +22,7 @@ struct HomeView: View {
                 .navigationTitle("Chiusure")
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationDestination(for: RoadClosure.self) {
-                    ClosureDetailView(closure: $0)
+                    ClosureDetailView(closure: $0, viewModel: viewModel)
                 }
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
@@ -193,15 +193,15 @@ struct HomeView: View {
             DirectionSwitch(selection: $direction) { candidate in
                 let closures = viewModel.activeClosures(for: candidate)
                 return (
-                    label: directionStatusLabel(closures, needsVerification: dataIsStale),
+                    label: directionStatusLabel(closures),
                     color: closures.isEmpty
                         ? (dataIsStale ? .a56Unknown : .a56Open)
                         : .a56Block
                 )
             }
 
-            if let source = viewModel.dataSource {
-                dataSourceRow(source)
+            if viewModel.dataSource != nil {
+                dataSourceRow
             }
         }
         .padding(.horizontal, 14)
@@ -212,12 +212,10 @@ struct HomeView: View {
         }
     }
 
-    private func directionStatusLabel(
-        _ closures: [RoadClosure],
-        needsVerification: Bool
-    ) -> String {
+    private func directionStatusLabel(_ closures: [RoadClosure]) -> String {
         guard !closures.isEmpty else {
-            return needsVerification ? "Nessuna chiusura nota" : "Tutto aperto"
+            if viewModel.freshness == nil { return "Controllo in corso" }
+            return viewModel.freshness?.limitationTitle ?? "Nessuna chiusura segnalata"
         }
 
         let roadCount = closures.filter { $0.kind == .roadBlocked }.count
@@ -325,7 +323,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Nessun orario disponibile")
                         .font(.headline)
-                    Text("I dati non sono completi o aggiornati.")
+                    Text("L’app non può confermare le prossime chiusure.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -449,34 +447,33 @@ struct HomeView: View {
 
     private func nowHeadline(hasRoadBlock: Bool, needsVerification: Bool) -> String {
         if needsVerification {
-            if activeNow.isEmpty { return "Nessuna chiusura nei dati salvati" }
+            if activeNow.isEmpty {
+                return viewModel.freshness?.limitationTitle ?? "Controllo in corso"
+            }
             return hasRoadBlock ? "Interruzione segnalata" : "Accessi segnalati"
         }
-        if activeNow.isEmpty { return "Percorso regolare" }
+        if activeNow.isEmpty { return "Nessuna chiusura segnalata" }
         return hasRoadBlock ? "Tangenziale interrotta" : "Accessi limitati"
     }
 
     private func nowSupportingText(hasRoadBlock: Bool, needsVerification: Bool) -> String {
-        if needsVerification {
-            if activeNow.isEmpty {
-                return "I dati salvati non indicano limitazioni, ma lo stato attuale non è confermato."
-            }
-            if hasRoadBlock {
-                return "L’ultimo dato indica uno o più tratti chiusi, ma la segnalazione non è aggiornata."
-            }
-            return "L’ultimo dato indica accessi chiusi, ma la segnalazione non è aggiornata."
+        if needsVerification, let detail = viewModel.freshness?.limitationDetail {
+            let guidance = activeNow.isEmpty
+                ? "L’app non può confermare se ci sono chiusure in corso."
+                : "Verifica la limitazione sul sito del gestore."
+            return "\(detail) \(guidance)"
         }
         if activeNow.isEmpty {
-            return "Nessuna limitazione nota nella direzione selezionata."
+            return "Controlla le chiusure programmate prima di partire."
         }
         if hasRoadBlock {
             return "Uno o più tratti non sono percorribili: apri il dettaglio prima di partire."
         }
-        return "La carreggiata resta percorribile, ma alcune entrate o uscite sono chiuse."
+        return "Gli avvisi disponibili segnalano chiusure di entrate o uscite."
     }
 
     private var dataIsStale: Bool {
-        viewModel.dataSource?.isStale ?? true
+        viewModel.dataNeedsVerification
     }
 
     private func closures(in day: ClosuresViewModel.DirectionDay) -> [RoadClosure] {
@@ -778,13 +775,13 @@ struct HomeView: View {
         .foregroundStyle(color)
     }
 
-    private func dataSourceRow(_ source: ClosuresViewModel.DataSource) -> some View {
+    private var dataSourceRow: some View {
         HStack(spacing: 6) {
             Image(systemName: freshnessIcon)
             Text(freshnessLabel)
         }
         .font(.caption2.weight(.semibold))
-        .foregroundStyle(source.isStale ? Color.a56Caution : Color.secondary)
+        .foregroundStyle(dataIsStale ? Color.a56Caution : Color.secondary)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 4)
         .accessibilityElement(children: .combine)
@@ -795,25 +792,13 @@ struct HomeView: View {
         switch viewModel.freshness {
         case .fresh: return "checkmark.seal.fill"
         case .partial: return "exclamationmark.circle.fill"
-        case .cache, .unavailable, nil: return "exclamationmark.triangle.fill"
+        case .expired, .cache, .unavailable, nil: return "exclamationmark.triangle.fill"
         }
     }
 
-    /// A partial refresh is still a refresh; labelling it like the offline
-    /// cache state pushes users to retry a fetch that already succeeded.
     private var freshnessLabel: String {
         if viewModel.isLoading { return "Aggiornamento in corso…" }
-
-        switch viewModel.freshness {
-        case .fresh(let timestamp):
-            return "Aggiornato \(ClosureFormat.updateTimeLabel(timestamp))"
-        case .partial(let timestamp):
-            return "Aggiornato \(ClosureFormat.updateTimeLabel(timestamp)) · controllo parziale"
-        case .cache(let timestamp):
-            return "Dati non aggiornati · ultimo \(ClosureFormat.updateTimeLabel(timestamp))"
-        case .unavailable, nil:
-            return "Servizio non raggiungibile · verifica i canali del gestore"
-        }
+        return viewModel.freshness?.updateLabel(reference: viewModel.now) ?? "Controllo in corso…"
     }
 }
 

@@ -5,8 +5,6 @@ struct OverviewMapView: View {
     let closures: [RoadClosure]
     @Binding var direction: Direction
     var now: Date = .now
-    var lastUpdatedAt: Date?
-    var dataIsStale = false
     var freshness: ClosuresViewModel.Freshness?
     var isLoading = false
     let onReload: () async -> Void
@@ -14,19 +12,23 @@ struct OverviewMapView: View {
     @State private var scope: Scope
     @State private var isReloading = false
     @State private var cachedTimeWindows: [ClosureTimeWindow] = []
-    @State private var selectedWindowID: String?
+    @State private var selectedWindowID: Date?
     @State private var selectedExitNumber: Int?
     @State private var visibleLongitudeDelta = 0.250
     @State private var isAtStandardPosition = true
     @State private var isLegendPresented = false
+    @State private var isFiltersPresented = false
     @State private var mapViewportSize: CGSize = .zero
     @State private var scopePanelHeight: CGFloat = 180
     @Namespace private var mapScope
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// Markers follow Dynamic Type: fixed 9-11pt labels were unreadable at
-    /// large text sizes.
-    @ScaledMetric(relativeTo: .caption2) private var markerDiameter: CGFloat = 23
-    @ScaledMetric(relativeTo: .caption2) private var markerFontSize: CGFloat = 12
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    // Scale the symbols without letting nearby exits cover each other at the
+    // largest sizes. The exit name and status are available to VoiceOver.
+    @ScaledMetric(relativeTo: .caption2) private var scaledMarkerDiameter: CGFloat = 23
+    @ScaledMetric(relativeTo: .caption2) private var scaledMarkerFont: CGFloat = 12
+    private var markerDiameter: CGFloat { min(scaledMarkerDiameter, 34) }
+    private var markerFontSize: CGFloat { min(scaledMarkerFont, 18) }
     @State private var camera: MapCameraPosition = .region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 40.850, longitude: 14.190),
@@ -50,8 +52,6 @@ struct OverviewMapView: View {
         closures: [RoadClosure],
         direction: Binding<Direction>,
         now: Date = .now,
-        lastUpdatedAt: Date? = nil,
-        dataIsStale: Bool = false,
         freshness: ClosuresViewModel.Freshness? = nil,
         isLoading: Bool = false,
         initialScope: Scope = .now,
@@ -60,8 +60,6 @@ struct OverviewMapView: View {
         self.closures = closures
         _direction = direction
         self.now = now
-        self.lastUpdatedAt = lastUpdatedAt
-        self.dataIsStale = dataIsStale
         self.freshness = freshness
         self.isLoading = isLoading
         self.onReload = onReload
@@ -93,12 +91,7 @@ struct OverviewMapView: View {
 #endif
     }
 
-    private struct ClosureTimeWindow: Identifiable {
-        let id: String
-        let start: Date
-        let end: Date
-        let closures: [RoadClosure]
-    }
+    private typealias ClosureTimeWindow = ClosureMatching.ScheduleSlice
 
     private struct ExitRampStatus {
         let label: String
@@ -135,15 +128,14 @@ struct OverviewMapView: View {
                     }
                     .buttonStyle(A56PressButtonStyle())
                     .accessibilityLabel(
-                        exit.commercialNumber.map { "Uscita \($0), \(exit.name)" }
-                            ?? "Accesso Italia 90, \(exit.name)"
+                        exit.isEntranceOnly
+                            ? "\(exit.name), solo ingresso in entrambe le direzioni"
+                            : exit.interchangeLabel
                     )
                     .accessibilityValue(
                         exitHasProblem(exit)
                             ? problemAccessibilityValue(for: exit)
-                            : (dataIsStale
-                                ? "Stato non confermato"
-                                : "Nessuna limitazione nella fascia selezionata")
+                            : (dataLimitationTitle ?? "Nessuna chiusura segnalata nella fascia selezionata")
                     )
                     .accessibilityHint("Mostra i dettagli dello svincolo")
                     .zIndex(2)
@@ -202,7 +194,7 @@ struct OverviewMapView: View {
             }
         }
         .overlay(alignment: .top) {
-            scopePanel
+            mapHeader
                 .padding(.horizontal, 10)
                 .padding(.top, 8)
                 .onGeometryChange(for: CGFloat.self) { proxy in
@@ -216,10 +208,38 @@ struct OverviewMapView: View {
                 }
                 .zIndex(10)
         }
-        .overlay(alignment: .bottom) {
-            bottomPanel
-                .padding(.horizontal, 10)
-                .padding(.bottom, 30)
+        .overlay(alignment: .bottomTrailing) {
+            VStack(alignment: .trailing, spacing: 8) {
+                bottomPanel
+
+                Link(destination: A56RouteGeometry.attributionURL) {
+                    Text("© OpenStreetMap")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(.thinMaterial, in: Capsule())
+                        .contentShape(Capsule())
+                }
+                .accessibilityLabel("Attribuzione dei dati OpenStreetMap")
+            }
+            .padding(.horizontal, 10)
+            .padding(.bottom, 6)
+        }
+        .sheet(isPresented: $isFiltersPresented) {
+            NavigationStack {
+                ScrollView {
+                    filterControls
+                        .padding()
+                }
+                .navigationTitle("Filtri mappa")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Fine") { isFiltersPresented = false }
+                    }
+                }
+            }
         }
         .navigationTitle("Mappa A56")
         .navigationBarTitleDisplayMode(.inline)
@@ -257,7 +277,9 @@ struct OverviewMapView: View {
             recomputeTimeWindows()
         }
         .onChange(of: direction) { _, _ in
+            selectedWindowID = nil
             selectedExitNumber = nil
+            recomputeTimeWindows()
             if isAtStandardPosition {
                 setOverviewCamera(animated: false)
             }
@@ -280,9 +302,13 @@ struct OverviewMapView: View {
 
     private var refreshInProgress: Bool { isLoading || isReloading }
 
-    private var initialFetchInProgress: Bool {
-        refreshInProgress && lastUpdatedAt == nil && closures.isEmpty
+    private var initialFetchInProgress: Bool { freshness == nil }
+
+    private var dataLimitationTitle: String? {
+        initialFetchInProgress ? "Controllo in corso" : freshness?.limitationTitle
     }
+
+    private var dataIsStale: Bool { dataLimitationTitle != nil }
 
     /// Neutral route color while data is stale; teal would read as an
     /// all-clear that has not been checked.
@@ -296,9 +322,6 @@ struct OverviewMapView: View {
         }
     }
 
-    /// Cached: rebuilding the windows runs Calendar math for every closure on
-    /// every day, and the map body reads `scoped` once per annotation.
-    /// Recomputed via `onChange` on its inputs.
     private var availableTimeWindows: [ClosureTimeWindow] { cachedTimeWindows }
 
     private func recomputeTimeWindows() {
@@ -306,32 +329,7 @@ struct OverviewMapView: View {
             cachedTimeWindows = []
             return
         }
-        let calendar = Calendar.current
-        let relevant = closures.filter { $0.end > now }
-
-        // Day keys come from every day a closure touches, not just start
-        // days: a multi-day closure in progress still needs windows for the
-        // days it covers.
-        var dayKeys = Set<Date>()
-        for closure in relevant {
-            dayKeys.formUnion(closure.scheduleDays(notBefore: now, calendar: calendar))
-        }
-
-        cachedTimeWindows = dayKeys
-            .map { day in
-                let ofDay = relevant
-                    .filter { $0.scheduleDays(notBefore: now, calendar: calendar).contains(day) }
-                    .sorted { $0.start < $1.start }
-                return ClosureTimeWindow(
-                    id: "night#\(Int(day.timeIntervalSince1970))",
-                    start: day,
-                    end: calendar.date(byAdding: .day, value: 1, to: day) ?? day,
-                    closures: ofDay
-                )
-            }
-            .sorted { lhs, rhs in
-                lhs.start == rhs.start ? lhs.end < rhs.end : lhs.start < rhs.start
-            }
+        cachedTimeWindows = ClosureMatching.scheduleSlices(closures, direction: direction, now: now)
     }
 
     private var selectedTimeWindow: ClosureTimeWindow? {
@@ -477,7 +475,7 @@ struct OverviewMapView: View {
                     .shadow(color: Color.a56Open.opacity(0.13), radius: 5, y: 2)
 
                 Image(systemName: "viewfinder")
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.primary)
             }
             .frame(width: 56, height: 56)
@@ -505,7 +503,7 @@ struct OverviewMapView: View {
                     .shadow(color: Color.a56Open.opacity(0.13), radius: 5, y: 2)
 
                 Image(systemName: isLegendPresented ? "xmark" : "list.bullet")
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.primary)
             }
             .frame(width: 56, height: 56)
@@ -565,10 +563,9 @@ struct OverviewMapView: View {
     }
 
     private func exitMarker(_ exit: A56Exit) -> some View {
-        let label = exit.commercialNumber.map(String.init) ?? "I90"
         let diameter: CGFloat = isOverviewZoom ? markerDiameter * 0.8 : markerDiameter
         let highlightsProblem = exitHasProblem(exit)
-        return Text(label)
+        return Text(exit.markerLabel)
             .font(.system(
                 size: isOverviewZoom ? markerFontSize * 0.85 : markerFontSize,
                 weight: .bold,
@@ -576,7 +573,7 @@ struct OverviewMapView: View {
             ))
             .foregroundStyle(.a56OnStatus)
             .frame(
-                width: exit.commercialNumber == nil ? diameter + 10 : diameter,
+                width: exit.isEntranceOnly ? diameter + 10 : diameter,
                 height: diameter
             )
             .background {
@@ -640,7 +637,7 @@ struct OverviewMapView: View {
 
     private func problemAccessibilityValue(for exit: A56Exit) -> String {
         let problem = exitRampStatus(exit)?.label ?? "Tratto chiuso"
-        return dataIsStale ? "\(problem), dato da verificare" : problem
+        return dataLimitationTitle.map { "\(problem), \($0)" } ?? problem
     }
 
     private func rampStatusBadge(_ status: ExitRampStatus) -> some View {
@@ -672,7 +669,33 @@ struct OverviewMapView: View {
 
     // MARK: - Floating controls
 
-    private var scopePanel: some View {
+    @ViewBuilder
+    private var mapHeader: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                Button {
+                    isFiltersPresented = true
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label("Filtri mappa", systemImage: "line.3.horizontal.decrease.circle")
+                        Text("\(direction.shortName) · \(scope.label)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                }
+                .accessibilityLabel("Filtri mappa")
+                .accessibilityValue("\(direction.shortName), \(scope.label)")
+                updateTimestamp
+            }
+            .padding(12)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
+        } else {
+            scopePanel
+        }
+    }
+
+    private var filterControls: some View {
         VStack(spacing: 10) {
             currentDirectionControl
 
@@ -686,6 +709,10 @@ struct OverviewMapView: View {
 
             updateTimestamp
         }
+    }
+
+    private var scopePanel: some View {
+        filterControls
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
@@ -699,7 +726,9 @@ struct OverviewMapView: View {
     }
 
     private var scopeControl: some View {
-        HStack(spacing: 4) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: 4)) : AnyLayout(HStackLayout(spacing: 4))
+        return layout {
             ForEach(Scope.allCases) { candidate in
                 scopeSegment(candidate)
             }
@@ -755,10 +784,9 @@ struct OverviewMapView: View {
     }
 
     private func currentStatusLabel(for candidate: Direction) -> String {
-        if initialFetchInProgress { return "Controllo in corso" }
         let relevant = statusClosures(for: candidate)
         guard !relevant.isEmpty else {
-            return dataIsStale ? "Nessuna chiusura nota" : "Tutto aperto"
+            return dataLimitationTitle ?? "Nessuna chiusura segnalata"
         }
 
         let roadCount = relevant.filter { $0.kind == .roadBlocked }.count
@@ -802,7 +830,7 @@ struct OverviewMapView: View {
                     "Prossima chiusura: \(relativeDayLabel(hint.start)) \(timeLabel(hint.start))"
                     + (hint.count > 1 ? " · \(hint.count) chiusure" : "")
                 )
-                .lineLimit(1)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                 .minimumScaleFactor(0.8)
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.right")
@@ -840,28 +868,14 @@ struct OverviewMapView: View {
         switch freshness {
         case .fresh: return "checkmark.seal.fill"
         case .partial: return "exclamationmark.circle.fill"
-        case .cache, .unavailable: return "exclamationmark.triangle.fill"
-        case nil: return dataIsStale ? "exclamationmark.triangle.fill" : "checkmark.seal.fill"
+        case .expired, .cache, .unavailable: return "exclamationmark.triangle.fill"
+        case nil: return "arrow.trianglehead.2.clockwise.rotate.90"
         }
     }
 
-    /// Same three-way copy as the Home status row: a partial refresh should
-    /// not read like the offline cache state.
     private var updateTimestampLabel: String {
         if refreshInProgress { return "Aggiornamento in corso…" }
-        switch freshness {
-        case .fresh(let timestamp):
-            return "Aggiornato \(ClosureFormat.updateTimeLabel(timestamp, reference: now))"
-        case .partial(let timestamp):
-            return "Aggiornato \(ClosureFormat.updateTimeLabel(timestamp, reference: now)) · controllo parziale"
-        case .cache(let timestamp):
-            return "Dati non aggiornati · ultimo \(ClosureFormat.updateTimeLabel(timestamp, reference: now))"
-        case .unavailable, nil:
-            guard let lastUpdatedAt else { return "Servizio non raggiungibile · verifica il gestore" }
-            return dataIsStale
-                ? "Dati non aggiornati · ultimo \(ClosureFormat.updateTimeLabel(lastUpdatedAt, reference: now))"
-                : "Aggiornato \(ClosureFormat.updateTimeLabel(lastUpdatedAt, reference: now))"
-        }
+        return freshness?.updateLabel(reference: now) ?? "Controllo in corso…"
     }
 
     @ViewBuilder
@@ -887,7 +901,7 @@ struct OverviewMapView: View {
                 }
             }
             .contentMargins(.horizontal, 4, for: .scrollContent)
-            .frame(height: 62)
+            .frame(height: dynamicTypeSize.isAccessibilitySize ? nil : 62)
             .scrollClipDisabled()
             .scrollIndicators(.hidden)
         }
@@ -905,7 +919,7 @@ struct OverviewMapView: View {
                 Text(scheduledDayTitle(window.start))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Text(scheduledTimeSummary(window, direction: direction))
+                Text(scheduledTimeSummary(window))
                     .font(.subheadline.monospacedDigit().weight(.bold))
                     .foregroundStyle(.primary)
             }
@@ -934,9 +948,8 @@ struct OverviewMapView: View {
         .buttonStyle(A56PressButtonStyle())
         .accessibilityLabel(
             "\(scheduledDayTitle(window.start)), "
-            + "\(scheduledTimeSummary(window, direction: direction)), "
+            + "\(scheduledTimeSummary(window)), "
             + windowImpactLabel(window, direction: direction)
-            + (dataIsStale ? ", dato da verificare" : "")
         )
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
@@ -950,25 +963,16 @@ struct OverviewMapView: View {
     }
 
     private var legendPanel: some View {
-        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 7) {
-            GridRow {
-                Text("Tratto")
-                legendState("Aperto", color: .a56Open, usesLine: true)
-                legendState("Chiuso", color: .a56Block, usesLine: true)
-            }
-
-            Divider()
-                .gridCellColumns(3)
-
-            GridRow {
-                Text("Entrata/uscita")
-                legendState("Aperte", color: .a56Open, usesLine: false)
-                legendState("Limitate", color: .a56Block, usesLine: false)
-            }
+        VStack(alignment: .leading, spacing: 7) {
+            legendState("Nessuna chiusura segnalata", color: .a56Open, usesLine: true)
+            legendState("Tratto chiuso", color: .a56Block, usesLine: true)
+            legendState("Entrata o uscita chiusa", color: .a56Block, usesLine: false)
+            legendState("Dati insufficienti sulle chiusure", color: .a56Unknown, usesLine: true)
+            Text("\(A56Line.italia90.markerLabel) · \(A56Line.italia90.interchangeLabel)")
         }
         .font(.caption2)
         .foregroundStyle(.secondary)
-        .fixedSize(horizontal: true, vertical: true)
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
@@ -976,10 +980,8 @@ struct OverviewMapView: View {
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(Color.a56GlassBorder.opacity(0.55), lineWidth: 0.5)
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(
-            "Legenda: colore verde petrolio per tratto o accesso percorribile; rosso per chiusura o limitazione"
-        )
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Legenda della mappa")
     }
 
     private func legendState(
@@ -1007,11 +1009,11 @@ struct OverviewMapView: View {
         let problems = problems(at: exit)
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
-                Text(exit.commercialNumber.map(String.init) ?? "I90")
+                Text(exit.markerLabel)
                     .font(.headline.monospacedDigit())
                     .foregroundStyle(.a56OnStatus)
                     .frame(minWidth: 36, minHeight: 36)
-                    .padding(.horizontal, exit.commercialNumber == nil ? 3 : 0)
+                    .padding(.horizontal, exit.isEntranceOnly ? 3 : 0)
                     .background(
                         problems.isEmpty
                             ? (dataIsStale ? Color.a56Caution : Color.a56Open)
@@ -1020,7 +1022,7 @@ struct OverviewMapView: View {
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(exit.commercialNumber == nil ? "Accesso Italia 90" : "Uscita \(exit.commercialNumber!)")
+                    Text(exit.isEntranceOnly ? "Solo ingresso · Entrambe le direzioni" : exit.kindLabel)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Text(exit.name)
@@ -1047,11 +1049,9 @@ struct OverviewMapView: View {
                 .accessibilityLabel("Chiudi dettagli")
             }
 
-            if dataIsStale {
+            if let title = dataLimitationTitle {
                 Label(
-                    problems.isEmpty
-                        ? "Stato non confermato: aggiorna o verifica il gestore"
-                        : "Limitazione non aggiornata: verifica prima di partire",
+                    problems.isEmpty ? title : "\(title) · verifica sul sito del gestore",
                     systemImage: "exclamationmark.triangle.fill"
                 )
                 .font(.caption.weight(.medium))
@@ -1061,7 +1061,7 @@ struct OverviewMapView: View {
             if problems.isEmpty {
                 if !dataIsStale {
                     Label(
-                        "Nessuna limitazione nella fascia selezionata",
+                        "Nessuna chiusura segnalata nella fascia selezionata",
                         systemImage: "checkmark.circle.fill"
                     )
                     .font(.caption.weight(.medium))
@@ -1132,11 +1132,10 @@ struct OverviewMapView: View {
             return relative.capitalized
         }
         return date.formatted(
-            .dateTime
+            ClosureFormat.dateStyle
                 .weekday(.abbreviated)
                 .day(.twoDigits)
                 .month(.abbreviated)
-                .locale(Locale(identifier: "it_IT"))
         )
     }
 
@@ -1152,7 +1151,9 @@ struct OverviewMapView: View {
         direction: Direction
     ) -> String {
         let relevant = windowClosures(window, direction: direction)
-        guard !relevant.isEmpty else { return "Nessuna limitazione \(direction.headingPhrase)" }
+        guard !relevant.isEmpty else {
+            return dataLimitationTitle ?? "Nessuna chiusura segnalata \(direction.headingPhrase)"
+        }
 
         let roadCount = relevant.filter { $0.kind == .roadBlocked }.count
         let rampCount = relevant
@@ -1165,46 +1166,24 @@ struct OverviewMapView: View {
         if rampCount > 0 {
             parts.append("\(rampCount) \(rampCount == 1 ? "accesso" : "accessi")")
         }
+        if let dataLimitationTitle { parts.append(dataLimitationTitle) }
         return parts.joined(separator: " · ")
     }
 
-    private func scheduledTimeSummary(
-        _ window: ClosureTimeWindow,
-        direction: Direction
-    ) -> String {
-        let calendar = Calendar.current
-        let scheduled = windowClosures(window, direction: direction).filter {
-            $0.start > now && calendar.isDate($0.start, inSameDayAs: window.start)
-        }
-        guard let earliestStart = scheduled.map(\.start).min(),
-              let latestEnd = scheduled.map(\.end).max()
-        else { return "Nessuna nuova chiusura" }
-
-        let hasMultiDayNotice = scheduled.contains {
-            !calendar.isDate($0.start, inSameDayAs: $0.end)
-                && calendar.dateComponents(
-                    [.day],
-                    from: calendar.startOfDay(for: $0.start),
-                    to: calendar.startOfDay(for: $0.end)
-                ).day ?? 0 > 1
-        }
-        if hasMultiDayNotice {
-            return "dalle \(timeLabel(earliestStart))"
-        }
-        return "\(timeLabel(earliestStart))–\(timeLabel(latestEnd))"
+    private func scheduledTimeSummary(_ window: ClosureTimeWindow) -> String {
+        let calendar = ClosureFormat.calendar
+        let endDay = calendar.isDate(window.start, inSameDayAs: window.end)
+            ? "" : " \(window.end.formatted(ClosureFormat.dateStyle.day().month(.twoDigits)))"
+        let warning = window.closures.contains { $0.reportedWindow != nil } ? " · da verificare" : ""
+        return "\(timeLabel(window.start))–\(timeLabel(window.end))\(endDay)\(warning)"
     }
 
     private func timeLabel(_ date: Date) -> String {
-        date.formatted(
-            .dateTime
-                .hour(.twoDigits(amPM: .omitted))
-                .minute(.twoDigits)
-                .locale(Locale(identifier: "it_IT"))
-        )
+        ClosureFormat.timeLabel(date)
     }
 
     private func relativeDayLabel(_ date: Date) -> String {
-        let calendar = Calendar.current
+        let calendar = ClosureFormat.calendar
         let delta = calendar.dateComponents(
             [.day],
             from: calendar.startOfDay(for: now),
@@ -1217,8 +1196,7 @@ struct OverviewMapView: View {
         case 2: return "dopodomani"
         default:
             return date.formatted(
-                .dateTime.day(.twoDigits).month(.abbreviated)
-                    .locale(Locale(identifier: "it_IT"))
+                ClosureFormat.dateStyle.day(.twoDigits).month(.abbreviated)
             )
         }
     }
@@ -1228,7 +1206,8 @@ struct OverviewMapView: View {
     NavigationStack {
         OverviewMapView(
             closures: SampleClosures.make(),
-            direction: .constant(.towardPozzuoli)
+            direction: .constant(.towardPozzuoli),
+            freshness: .fresh(.now)
         )
             .navigationDestination(for: RoadClosure.self) { ClosureDetailView(closure: $0) }
     }

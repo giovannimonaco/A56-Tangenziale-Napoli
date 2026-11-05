@@ -30,6 +30,17 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
     /// `start`.
     let start: Date
     let end: Date
+    /// A conservative interval is shown when sources disagree on its bounds.
+    let reportedWindow: ReportedWindow?
+    /// A live closure can be published without a reopening time.
+    let hasUnpublishedEnd: Bool?
+    /// The schedule end before an active notice extends the window.
+    let scheduledEnd: Date?
+
+    nonisolated struct ReportedWindow: Codable, Hashable, Sendable {
+        let start: Date
+        let end: Date
+    }
 
     let direction: Direction
 
@@ -60,9 +71,6 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
     /// `true` when the whole carriageway segment is closed (not just ramps).
     let isFullClosure: Bool
 
-    /// The original official notice text, kept verbatim for auditing.
-    let sourceText: String
-
     /// Optional for backward compatibility with archives saved by older builds.
     let evidence: ClosureEvidence?
 
@@ -81,11 +89,17 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
         alternativeSuggestions: [AlternativeSuggestion]? = nil,
         isFullClosure: Bool = false,
         sourceText: String = "",
-        evidence: ClosureEvidence? = nil
+        evidence: ClosureEvidence? = nil,
+        reportedWindow: ReportedWindow? = nil,
+        hasUnpublishedEnd: Bool? = nil,
+        scheduledEnd: Date? = nil
     ) {
         self.id = id
         self.start = start
         self.end = end
+        self.reportedWindow = reportedWindow
+        self.hasUnpublishedEnd = hasUnpublishedEnd
+        self.scheduledEnd = scheduledEnd
         self.direction = direction
         self.affectsBothDirections = affectsBothDirections
         self.fromExit = fromExit
@@ -104,7 +118,6 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
         self.suggestedAlternatives = suggestedAlternatives
         self.alternativeSuggestions = alternativeSuggestions
         self.isFullClosure = isFullClosure
-        self.sourceText = sourceText
         self.evidence = evidence
     }
 
@@ -123,14 +136,14 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
     /// The calendar day the closure starts on. Used to bucket closures into
     /// Today / Tomorrow / Next days on the home screen.
     var startDay: Date {
-        Calendar.current.startOfDay(for: start)
+        ClosureFormat.calendar.startOfDay(for: start)
     }
 
     /// Calendar rows this closure appears on in the scheduled view. An
     /// overnight closure belongs to the evening it starts; a multi-day
     /// continuous closure is repeated on every affected day.
-    func scheduleDays(notBefore reference: Date, calendar: Calendar = .current) -> [Date] {
-        guard end > reference else { return [] }
+    func scheduleDays(notBefore reference: Date, calendar: Calendar = ClosureFormat.calendar) -> [Date] {
+        guard end > reference, hasUnpublishedEnd != true else { return [] }
 
         let earliest = max(calendar.startOfDay(for: start), calendar.startOfDay(for: reference))
         var latest = calendar.startOfDay(for: end)
@@ -164,7 +177,9 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
 
     var kind: ClosureKind { isFullClosure ? .roadBlocked : .rampsClosed }
 
-    var closedRamps: [ClosureRampImpact] { rampImpacts.filter(\.isClosed) }
+    var closedRamps: [ClosureRampImpact] {
+        rampImpacts.filter { $0.isClosed && $0.existsAtInterchange }
+    }
     var closedEntrances: [ClosureRampImpact] { closedRamps.filter { $0.kind == .entrance } }
     var closedExits: [ClosureRampImpact] { closedRamps.filter { $0.kind == .exit } }
 
@@ -183,9 +198,10 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
     /// and hints for the other carriageway: shown as "exit here" they would
     /// send the driver the wrong way.
     func recommendedExitBefore(for direction: Direction) -> Int? {
-        alternativeSuggestions?.first {
-            $0.kind == .exitBefore && ($0.direction == nil || $0.direction == direction)
-        }?.exitNumber
+        alternativeSuggestions?.lazy.filter {
+            $0.kind == .exitBefore && $0.label != nil
+                && ($0.direction == direction || ($0.direction == nil && !affectsBothDirections))
+        }.compactMap(\.exitNumber).first
     }
 
     /// Card headline, in driver language.
@@ -204,13 +220,18 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
         }
     }
 
-    /// Copy with only the source evidence changed. Used when the live feed
-    /// confirms a scheduled occurrence, keeping its exact window.
-    func withEvidence(_ evidence: ClosureEvidence) -> RoadClosure {
-        RoadClosure(
+    /// Preserve the scheduled start and cover a later end reported live.
+    func confirmed(by live: RoadClosure) -> RoadClosure {
+        let plannedEnd = scheduledEnd ?? end
+        let unpublished = live.hasUnpublishedEnd == true
+        let endChanged = !unpublished && plannedEnd != live.end
+        let plannedDiscrepancy = evidence == .scheduled ? reportedWindow : nil
+        let reported = plannedDiscrepancy ?? live.reportedWindow
+            ?? (endChanged || unpublished ? ReportedWindow(start: start, end: min(plannedEnd, live.end)) : nil)
+        return RoadClosure(
             id: id,
             start: start,
-            end: end,
+            end: max(plannedEnd, live.end),
             direction: direction,
             affectsBothDirections: affectsBothDirections,
             fromExit: fromExit,
@@ -221,8 +242,10 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
             suggestedAlternatives: suggestedAlternatives,
             alternativeSuggestions: alternativeSuggestions,
             isFullClosure: isFullClosure,
-            sourceText: sourceText,
-            evidence: evidence
+            evidence: .realtimeConfirmed,
+            reportedWindow: reported,
+            hasUnpublishedEnd: unpublished ? true : nil,
+            scheduledEnd: plannedEnd
         )
     }
 
@@ -232,7 +255,7 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
         RoadClosure(
             id: id,
             start: start,
-            end: max(date, start.addingTimeInterval(60)),
+            end: max(date, start),
             direction: direction,
             affectsBothDirections: affectsBothDirections,
             fromExit: fromExit,
@@ -243,8 +266,10 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
             suggestedAlternatives: suggestedAlternatives,
             alternativeSuggestions: alternativeSuggestions,
             isFullClosure: isFullClosure,
-            sourceText: sourceText,
-            evidence: evidence
+            evidence: evidence,
+            reportedWindow: reportedWindow,
+            hasUnpublishedEnd: hasUnpublishedEnd,
+            scheduledEnd: scheduledEnd
         )
     }
 }

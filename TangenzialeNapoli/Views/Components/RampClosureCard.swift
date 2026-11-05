@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Card for a closed entrance/exit while the carriageway itself stays open.
+/// Card for an entrance or exit reported closed.
 struct RampClosureCard: View {
     let closure: RoadClosure
     /// When the closure is happening now, show "fino alle …" instead of the range.
@@ -30,12 +30,9 @@ struct RampClosureCard: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            Label("La tangenziale resta aperta", systemImage: "checkmark.circle.fill")
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(.a56Open)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(closure.headline) a \(exitName), \(ClosureFormat.timeRange(closure)). La tangenziale resta aperta.")
+        .accessibilityLabel("\(closure.headline) a \(exitName), \(ClosureFormat.timeRange(closure)).")
     }
 }
 

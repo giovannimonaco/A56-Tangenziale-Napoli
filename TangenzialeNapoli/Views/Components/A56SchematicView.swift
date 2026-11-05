@@ -55,9 +55,14 @@ struct A56SchematicView: View {
                 }
             }
             .frame(height: nodeDiameter)
+
+            Text("\(A56Line.italia90.markerLabel) · \(A56Line.italia90.interchangeLabel)")
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilitySummary)
+        .accessibilityLabel("\(accessibilitySummary) \(A56Line.italia90.name), solo ingresso in entrambe le direzioni.")
     }
 
     private var endpointLabels: some View {
@@ -81,7 +86,7 @@ struct A56SchematicView: View {
 
     private func exitNode(_ exit: A56Exit) -> some View {
         let hasIssue = exitHasIssue(exit)
-        return Text(exit.commercialNumber.map(String.init) ?? "I90")
+        return Text(exit.markerLabel)
             .font(.system(size: nodeFontSize, weight: .bold, design: .rounded))
             .minimumScaleFactor(0.6)
             .foregroundStyle(.a56OnStatus)
@@ -135,7 +140,7 @@ struct A56SchematicView: View {
                 + "\(direction.headingPhrase), da verificare."
         }
         guard !relevantClosures.isEmpty else {
-            return "Schema A56 da Pozzuoli a Capodichino. Tutto aperto \(direction.headingPhrase)."
+            return "Schema A56 da Pozzuoli a Capodichino. Nessuna chiusura segnalata \(direction.headingPhrase)."
         }
         return "Schema A56 da Pozzuoli a Capodichino. "
             + "\(relevantClosures.count) limitazioni \(direction.headingPhrase)."
