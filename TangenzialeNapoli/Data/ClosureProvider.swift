@@ -9,20 +9,11 @@ nonisolated struct ClosureDataQuality: Equatable, Sendable {
     let mappedRecords: Int
     let unresolvedRecords: [String]
     let topologyIssues: [String]
-    var mappedTimingIssues: [String] = []
-
+    /// Timing disagreements covered by a closure's window are shown on that closure.
     var mappingIsComplete: Bool {
-        mappingHasCompleteCoverage && mappedTimingIssues.isEmpty
-    }
-
-    private var mappingHasCompleteCoverage: Bool {
         expectedRecords == mappedRecords
             && unresolvedRecords.isEmpty
             && topologyIssues.isEmpty
-    }
-
-    var canAssessTrip: Bool {
-        plannedFeedAvailable && realtimeFeedAvailable && mappingHasCompleteCoverage
     }
 
     var isFullyVerified: Bool {

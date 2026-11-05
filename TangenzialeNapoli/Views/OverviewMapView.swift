@@ -909,6 +909,7 @@ struct OverviewMapView: View {
 
     private func scheduleWindowChip(_ window: ClosureTimeWindow) -> some View {
         let isSelected = window.id == selectedTimeWindow?.id
+        let hasTimingConflict = windowClosures(window, direction: direction).contains { $0.reportedWindow != nil }
         return Button {
             withAnimation(reduceMotion ? nil : .snappy) {
                 selectedWindowID = window.id
@@ -919,9 +920,16 @@ struct OverviewMapView: View {
                 Text(scheduledDayTitle(window.start))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Text(scheduledTimeSummary(window))
-                    .font(.subheadline.monospacedDigit().weight(.bold))
-                    .foregroundStyle(.primary)
+                HStack(spacing: 5) {
+                    Text(scheduledTimeSummary(window))
+                        .font(.subheadline.monospacedDigit().weight(.bold))
+                        .foregroundStyle(.primary)
+                    if hasTimingConflict {
+                        Image(systemName: "info.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -950,6 +958,7 @@ struct OverviewMapView: View {
             "\(scheduledDayTitle(window.start)), "
             + "\(scheduledTimeSummary(window)), "
             + windowImpactLabel(window, direction: direction)
+            + (hasTimingConflict ? ". \(ClosureFormat.timingNote)" : "")
         )
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
@@ -1174,8 +1183,7 @@ struct OverviewMapView: View {
         let calendar = ClosureFormat.calendar
         let endDay = calendar.isDate(window.start, inSameDayAs: window.end)
             ? "" : " \(window.end.formatted(ClosureFormat.dateStyle.day().month(.twoDigits)))"
-        let warning = window.closures.contains { $0.reportedWindow != nil } ? " · da verificare" : ""
-        return "\(timeLabel(window.start))–\(timeLabel(window.end))\(endDay)\(warning)"
+        return "\(timeLabel(window.start))–\(timeLabel(window.end))\(endDay)"
     }
 
     private func timeLabel(_ date: Date) -> String {

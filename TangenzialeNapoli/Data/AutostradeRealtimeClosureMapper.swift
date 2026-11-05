@@ -14,6 +14,10 @@ nonisolated enum AutostradeRealtimeClosureMapper {
         var isComplete: Bool {
             expectedEvents == mappedEvents && issues.isEmpty
         }
+
+        var hasCompleteCoverage: Bool {
+            expectedEvents == mappedEvents && issues.allSatisfy(\.coveredByMappedWindow)
+        }
     }
 
     static func closures(

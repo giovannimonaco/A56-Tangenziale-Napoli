@@ -167,8 +167,8 @@ struct InfoView: View {
                 Text(
                     "La posizione viene chiesta quando scegli «Usa la mia posizione» o tocchi un preferito per "
                     + "controllare il percorso. Puoi anche inserire la partenza a mano o revocare l’accesso in "
-                    + "Impostazioni. Le ricerche di luoghi e gli estremi del percorso vengono inviati a Mappe di Apple. "
-                    + "Se apri l’itinerario in Google Maps, gli estremi e le eventuali tappe vengono inviati a Google per il calcolo. "
+                    + "Impostazioni. Mappe di Apple usa le coordinate della posizione per trovare l’indirizzo di "
+                    + "partenza e riceve anche le ricerche di luoghi e gli estremi del percorso. "
                     + "L’app salva sul dispositivo solo le destinazioni che aggiungi ai preferiti. "
                     + "Puoi rimuoverle dal tab Percorsi."
                 )

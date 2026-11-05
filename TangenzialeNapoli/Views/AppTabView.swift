@@ -91,13 +91,11 @@ struct AppTabView: View {
                 }
                 .tag(AppTab.closures)
 
-            NavigationStack {
-                TripView(closures: viewModel)
-            }
-            .tabItem {
-                Label("Percorsi", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
-            }
-            .tag(AppTab.trips)
+            TripView(closures: viewModel)
+                .tabItem {
+                    Label("Percorsi", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+                }
+                .tag(AppTab.trips)
         }
         .tint(.a56Open)
         .sheet(isPresented: $isInfoPresented) {

@@ -33,7 +33,6 @@ final class ClosuresViewModel {
             case .partial(_, let quality):
                 if !quality.realtimeFeedAvailable { "Tempo reale assente" }
                 else if !quality.plannedFeedAvailable { "Programmazione assente" }
-                else if quality.canAssessTrip { "Orari discordanti" }
                 else { "Avvisi incompleti" }
             case .expired: "Avvisi non aggiornati"
             case .cache: "Avvisi salvati"
@@ -53,10 +52,8 @@ final class ClosuresViewModel {
                 if !quality.plannedFeedAvailable {
                     details.append("Mancano gli avvisi sulle chiusure programmate.")
                 }
-                if quality.canAssessTrip {
-                    details.append("Alcuni avvisi riportano orari diversi. L’app considera la finestra più ampia.")
-                } else if !quality.mappingIsComplete {
-                    details.append("Alcuni avvisi sono incompleti o discordanti.")
+                if !quality.mappingIsComplete {
+                    details.append("Alcuni avvisi sono incompleti.")
                 }
                 return details.joined(separator: " ")
             case .expired:
@@ -103,11 +100,6 @@ final class ClosuresViewModel {
     var dataNeedsVerification: Bool {
         if case .fresh = freshness { return false }
         return true
-    }
-
-    var tripDataNeedsVerification: Bool {
-        if case .partial(_, let quality) = freshness { return !quality.canAssessTrip }
-        return dataNeedsVerification
     }
 
     /// One day for one direction, split into road blocks and ramp closures.

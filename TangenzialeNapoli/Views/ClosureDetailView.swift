@@ -18,7 +18,7 @@ struct ClosureDetailView: View {
     private var isPast: Bool { closure.end <= (viewModel?.now ?? .now) }
     private var needsVerification: Bool {
         guard let viewModel, !isPast else { return false }
-        return currentNotice == nil || viewModel.dataNeedsVerification || closure.reportedWindow != nil
+        return currentNotice == nil || viewModel.dataNeedsVerification
     }
 
     private var accent: Color { .a56Block }
@@ -155,14 +155,16 @@ struct ClosureDetailView: View {
                     }
                 }
             }
-            if let reported = closure.reportedWindow {
+            if let reported = closure.reportedWindow, closure.hasUnpublishedEnd == true {
                 let start = ClosureFormat.timeLabel(reported.start)
                 let end = ClosureFormat.timeLabel(reported.end)
-                Text(closure.hasUnpublishedEnd == true
-                     ? "Fascia programmata \(start)–\(end). Il feed in tempo reale non indica la fine."
-                     : "Un campo dell’avviso indica \(start)–\(end). Verifica l’orario sul sito del gestore.")
+                Text("Fascia programmata \(start)–\(end). Il feed in tempo reale non indica la fine.")
                     .font(.footnote)
-                    .foregroundStyle(.a56Caution)
+                    .foregroundStyle(.secondary)
+            } else if closure.reportedWindow != nil {
+                Label(ClosureFormat.timingNote, systemImage: "info.circle")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
         .detailSurface()
@@ -412,8 +414,8 @@ struct ClosureDetailView: View {
 
     private var displayedTime: String {
         closure.evidence == .realtime
-            ? ClosureFormat.endLabel(closure, reference: viewModel?.now ?? .now)
-            : ClosureFormat.timeRange(closure)
+            ? ClosureFormat.endLabel(closure, reference: viewModel?.now ?? .now, includesTimingNote: false)
+            : ClosureFormat.timeRange(closure, includesTimingNote: false)
     }
 
     private var evidenceText: String {

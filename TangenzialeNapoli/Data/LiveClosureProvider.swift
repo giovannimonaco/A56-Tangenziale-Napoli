@@ -81,10 +81,6 @@ nonisolated struct LiveClosureProvider: ClosureProvider {
 
         let mappingIssues = plannedReport.issues + realtimeReport.issues
         var issueSummaries = mappingIssues.filter { !$0.coveredByMappedWindow }.map(\.summary)
-        var mappedTimingIssues = mappingIssues.filter(\.coveredByMappedWindow).map(\.summary)
-        if confirmedPlanned.contains(where: { $0.evidence == .realtimeConfirmed && $0.reportedWindow != nil && $0.hasUnpublishedEnd != true }) {
-            mappedTimingIssues.append("Programmazione e tempo reale riportano orari discordanti.")
-        }
         if let dropped = planned?.undecodedEventCount, dropped > 0 {
             issueSummaries.append("\(dropped) righe del feed programmato non decodificabili.")
         } else if planned?.events.isEmpty == true {
@@ -102,8 +98,7 @@ nonisolated struct LiveClosureProvider: ClosureProvider {
             expectedRecords: plannedReport.expectedOccurrences + realtimeReport.expectedEvents,
             mappedRecords: plannedReport.mappedOccurrences + realtimeReport.mappedEvents,
             unresolvedRecords: issueSummaries,
-            topologyIssues: integrityIssues,
-            mappedTimingIssues: mappedTimingIssues
+            topologyIssues: integrityIssues
         )
         AppLog.log(
             "planned=\(plannedClosures.count), active=\(activeClosures.count), backfill=\(activeBackfill.count), verified=\(quality.mappedRecords)/\(quality.expectedRecords) -> \(closures.count) A56 closures",
@@ -115,7 +110,7 @@ nonisolated struct LiveClosureProvider: ClosureProvider {
             canInferCancellations: integrityIssues.isEmpty && planned?.events.isEmpty == false
                 && planned?.undecodedEventCount == 0 && plannedReport.hasCompleteCoverage,
             canRevalidateActive: integrityIssues.isEmpty && realtime?.events.isEmpty == false
-                && realtime?.undecodedEventCount == 0 && realtimeReport.isComplete
+                && realtime?.undecodedEventCount == 0 && realtimeReport.hasCompleteCoverage
         )
     }
 

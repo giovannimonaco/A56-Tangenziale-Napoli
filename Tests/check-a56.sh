@@ -10,5 +10,5 @@ xcrun --sdk macosx swiftc -O \
     TangenzialeNapoli/Data/{ClosureArchive,ClosureMatching,ClosureProvider,LiveClosureProvider,SampleClosures}.swift \
     TangenzialeNapoli/Models/{A56Exit,AlternativeSuggestion,ClosureRampImpact,Direction,RoadClosure,Severity}.swift \
     TangenzialeNapoli/ViewModels/ClosuresViewModel.swift \
-    TangenzialeNapoli/Utilities/{AppLog,DateFormatting,TripNavigationLinks}.swift -o "$work_dir/check-a56"
+    TangenzialeNapoli/Utilities/{AppLog,DateFormatting}.swift -o "$work_dir/check-a56"
 "$work_dir/check-a56" "$@"

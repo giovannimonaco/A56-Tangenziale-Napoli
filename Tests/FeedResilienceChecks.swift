@@ -17,6 +17,13 @@ private final class FixtureProtocol: URLProtocol, @unchecked Sendable {
             : (fixture == "range" && !planned ? 206 : 200)
         let content: String
         switch fixture {
+        case "bounded-times" where planned:
+            let start = Date().addingTimeInterval(6 * 3600).timeIntervalSince1970 * 1000
+            let end = start + 6 * 3600 * 1000
+            content = """
+            {"events":[{"c_str":"A56","c_dir":"N","t_des_fra_it":"Entrata Chiusa","locpri":"Agnano",
+            "d_sta":\(start),"d_sto":\(end),"indisponibilita":[{"d_ini":\(start),"d_fin":\(end + 5 * 3600 * 1000)}]}]}
+            """
         case "renamed":
             content = #"{"events":[{"road":"A56","type":"Tratto Chiuso"}]}"#
         case "malformed":
@@ -77,6 +84,11 @@ private final class FixtureProtocol: URLProtocol, @unchecked Sendable {
         precondition(stalled.quality?.realtimeFeedAvailable == false && !stalled.canRevalidateActive,
                      "A successful HTTP response can still contain an old publication")
 
+        let bounded = try await provider("bounded-times").fetchClosures()
+        precondition(bounded.quality?.isFullyVerified == true
+            && bounded.canInferCancellations && bounded.closures.first?.reportedWindow != nil,
+            "A mapped timing discrepancy should only affect trips that encounter the closure")
+
         let file = FileManager.default.temporaryDirectory.appendingPathComponent("a56-test-\(UUID().uuidString).json")
         defer { try? FileManager.default.removeItem(at: file) }
         let archive = ClosureArchive(fileURL: file)
@@ -120,6 +132,11 @@ private final class FixtureProtocol: URLProtocol, @unchecked Sendable {
             precondition(model.dataNeedsVerification && model.freshness?.limitationTitle == title)
             precondition(model.freshness?.updateLabel(reference: clock) == "\(title) · controllo alle 23:00")
         }
+
+        let scoped = ClosuresViewModel(provider: provider("bounded-times"), archive: archive, clock: { clock })
+        await scoped.load()
+        precondition(!scoped.dataNeedsVerification && scoped.freshness?.limitationTitle == nil
+            && scoped.closures.contains { $0.reportedWindow != nil })
 
         let online = ClosuresViewModel(provider: provider("valid"), archive: archive, clock: { clock })
         await online.load()

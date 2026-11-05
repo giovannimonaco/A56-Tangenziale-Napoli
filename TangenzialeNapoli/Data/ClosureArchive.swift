@@ -61,6 +61,9 @@ actor ClosureArchive {
         if version < 2 {
             payload.closures = payload.closures.map(migrateFromSchema1)
         }
+        for index in payload.closures.indices {
+            payload.closures[index].coverArchivedSchedule()
+        }
         // Older archives may contain exit-only notices for an entrance-only
         // junction. Preserve mixed notices with a valid entrance closure.
         payload.closures.removeAll {

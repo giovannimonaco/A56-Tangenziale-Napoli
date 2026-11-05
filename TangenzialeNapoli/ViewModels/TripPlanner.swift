@@ -9,6 +9,14 @@ final class TripPlanner {
         let name: String
         let subtitle: String?
         let item: MKMapItem
+        let locationDetails: TripLocation.Details?
+
+        init(name: String, subtitle: String?, item: MKMapItem, locationDetails: TripLocation.Details? = nil) {
+            self.name = name
+            self.subtitle = subtitle
+            self.item = item
+            self.locationDetails = locationDetails
+        }
 
         var coordinate: CLLocationCoordinate2D {
             if #available(iOS 26.0, *) { return item.location.coordinate }
@@ -56,25 +64,28 @@ final class TripPlanner {
             withA56.first {
                 $0.impacts(closures: closures, departure: departure).isEmpty
             } ?? withA56.first {
-                !$0.impacts(closures: closures, departure: departure).contains { $0.kind == .roadBlock }
+                !$0.impacts(closures: closures, departure: departure).contains(where: \.blocksRoute)
             } ?? withA56.first
         }
     }
 
-    var origin: Place? { didSet { resetComparison() } }
-    var destination: Place? { didSet { resetComparison() } }
+    let origin: Place
+    let destination: Place
     private(set) var result: Result?
-    private(set) var isCalculating = false
     private(set) var error: String?
     @ObservationIgnored private var activeRequest: MKDirections?
     @ObservationIgnored private var revision = 0
 
+    init(origin: Place, destination: Place) {
+        self.origin = origin
+        self.destination = destination
+    }
+
     func calculate() async {
-        guard !isCalculating, let origin, let destination else { return }
+        guard !Task.isCancelled else { return }
         resetComparison()
         let currentRevision = revision
-        isCalculating = true
-        defer { if revision == currentRevision { isCalculating = false } }
+        defer { if revision == currentRevision { activeRequest = nil } }
 
         var options: [Option] = []
         var searchIncomplete = false
@@ -93,7 +104,11 @@ final class TripPlanner {
                 }
                 let directions = MKDirections(request: request)
                 activeRequest = directions
-                let response = try await directions.calculate()
+                let response = try await withTaskCancellationHandler {
+                    try await directions.calculate()
+                } onCancel: {
+                    Task { @MainActor in directions.cancel() }
+                }
                 guard currentRevision == revision, !Task.isCancelled else { return }
                 activeRequest = nil
                 options += response.routes.map { route in
@@ -152,12 +167,11 @@ final class TripPlanner {
         activeRequest = nil
         result = nil
         error = nil
-        isCalculating = false
     }
 }
 
 extension TripPlanner.Place {
-    init(name: String, subtitle: String? = nil, location: CLLocation) {
+    init(name: String, subtitle: String? = nil, location: CLLocation, locationDetails: TripLocation.Details? = nil) {
         let item: MKMapItem
         if #available(iOS 26.0, *) {
             item = MKMapItem(location: location, address: nil)
@@ -165,13 +179,46 @@ extension TripPlanner.Place {
             item = MKMapItem(placemark: MKPlacemark(coordinate: location.coordinate))
         }
         item.name = name
-        self.init(name: name, subtitle: subtitle, item: item)
+        self.init(name: name, subtitle: subtitle, item: item, locationDetails: locationDetails)
     }
 }
 
 @MainActor
 @Observable
 final class TripLocation: NSObject, CLLocationManagerDelegate {
+    @MainActor
+    @Observable
+    final class Details: Hashable {
+        let horizontalAccuracy: CLLocationAccuracy
+        private(set) var address: String?
+        private(set) var isResolvingAddress = true
+
+        init(horizontalAccuracy: CLLocationAccuracy) {
+            self.horizontalAccuracy = horizontalAccuracy
+        }
+
+        nonisolated static func == (lhs: Details, rhs: Details) -> Bool {
+            lhs === rhs
+        }
+
+        nonisolated func hash(into hasher: inout Hasher) {
+            hasher.combine(ObjectIdentifier(self))
+        }
+
+        func resolveAddress(for location: CLLocation) async {
+            defer { isResolvingAddress = false }
+            if #available(iOS 26.0, *) {
+                guard let request = MKReverseGeocodingRequest(location: location) else { return }
+                address = try? await request.mapItems.first?.address?.fullAddress
+            } else {
+                let geocoder = CLGeocoder()
+                if let placemark = try? await geocoder.reverseGeocodeLocation(location).first {
+                    address = MKPlacemark(placemark: placemark).title
+                }
+            }
+        }
+    }
+
     private(set) var place: TripPlanner.Place?
     private(set) var isLocating = false
     private(set) var error: String?
@@ -242,6 +289,8 @@ final class TripLocation: NSObject, CLLocationManagerDelegate {
             error = "Non riesco a trovare una posizione precisa. Riprova o scegli un indirizzo di partenza."
             return
         }
-        place = .init(name: "La mia posizione", location: location)
+        let details = Details(horizontalAccuracy: location.horizontalAccuracy)
+        place = .init(name: "La mia posizione", location: location, locationDetails: details)
+        Task { await details.resolveAddress(for: location) }
     }
 }

@@ -18,6 +18,7 @@ nonisolated enum A56TripMatcher {
     }
 
     enum Access: Equatable {
+        case signedInterchange(A56Exit)
         case interchange(A56Exit)
         case onCarriageway
         case unidentified
@@ -30,12 +31,14 @@ nonisolated enum A56TripMatcher {
 
     struct Impact {
         enum Kind: Int {
-            case roadBlock, ramp, nearBoundary
+            case roadBlock, closedRamp, ramp, nearBoundary
         }
 
         let closure: RoadClosure
         let kind: Kind
         let ramp: ClosureRampImpact?
+
+        var blocksRoute: Bool { kind == .roadBlock || kind == .closedRamp }
     }
 
     private struct Projection {
@@ -78,7 +81,6 @@ nonisolated enum A56TripMatcher {
 
     private struct Carriageway {
         let direction: Direction
-        let segments: [Segment]
         let byLongitude: [Int: [Segment]]
         let exits: [Int: Double]
 
@@ -91,7 +93,6 @@ nonisolated enum A56TripMatcher {
                 coordinates.reverse()
             }
             let segments = A56TripMatcher.segments(coordinates.map(MKMapPoint.init))
-            self.segments = segments
             var buckets: [Int: [Segment]] = [:]
             for segment in segments {
                 let first = Self.bucket(segment.from.x)
@@ -313,7 +314,9 @@ nonisolated enum A56TripMatcher {
             }
         }
 
-        if numberedSigns.count == 1, let signed = numberedSigns.first { return .interchange(signed) }
+        if numberedSigns.count == 1, let signed = numberedSigns.first {
+            return candidates.first?.junction == signed ? .signedInterchange(signed) : .interchange(signed)
+        }
         guard numberedSigns.isEmpty else { return .unidentified }
         if signs.count == 1, let signed = signs.first { return .interchange(signed) }
         guard signs.isEmpty, let closest = candidates.first,
@@ -360,18 +363,6 @@ nonisolated enum A56TripMatcher {
         }
         guard let best, let direction else { return nil }
         return Match(direction: direction, position: best.position, routePosition: routePosition, distance: best.distance, point: point)
-    }
-
-    /// A stop on the matched carriageway steers an external navigator toward
-    /// the A56 without treating the estimated entrance or exit as a stop.
-    static func waypoint(for traversal: Traversal) -> CLLocationCoordinate2D? {
-        let midpoint = (traversal.start + traversal.end) / 2
-        guard let way = carriageways.first(where: { $0.direction == traversal.direction }),
-              let segment = way.segments.first(where: { midpoint >= $0.start && midpoint <= $0.start + $0.length })
-        else { return nil }
-        let fraction = (midpoint - segment.start) / segment.length
-        return MKMapPoint(x: segment.from.x + fraction * segment.dx,
-                          y: segment.from.y + fraction * segment.dy).coordinate
     }
 
     static func impacts(
@@ -424,8 +415,17 @@ nonisolated enum A56TripMatcher {
                         let isEntrance = ramp.kind == .entrance
                         let access = isEntrance ? traversal.entry : traversal.exit
                         let transition = isEntrance ? traversal.start : traversal.end
-                        if access != .onCarriageway, abs(position - transition) <= rampTolerance {
-                            possible = Impact(closure: closure, kind: .ramp, ramp: ramp)
+                        switch access {
+                        case .signedInterchange(let junction):
+                            if junction.number == ramp.exitNumber {
+                                return Impact(closure: closure, kind: .closedRamp, ramp: ramp)
+                            }
+                        case .interchange, .unidentified:
+                            if abs(position - transition) <= rampTolerance {
+                                possible = Impact(closure: closure, kind: .ramp, ramp: ramp)
+                            }
+                        case .onCarriageway:
+                            break
                         }
                     }
                 }

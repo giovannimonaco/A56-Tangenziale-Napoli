@@ -173,7 +173,9 @@ nonisolated enum NoticeText {
         let components = DateComponents(year: year, month: month, day: day, hour: hour == 24 ? 0 : hour, minute: minute)
         let calendar = ClosureFormat.calendar
         guard components.isValidDate(in: calendar), let date = calendar.date(from: components) else { return nil }
-        return hour == 24 ? calendar.date(byAdding: .day, value: 1, to: date) : date
+        let normalized = hour == 24 ? calendar.date(byAdding: .day, value: 1, to: date) : date
+        guard let normalized, AutostradeClosureMapper.isPlausibleDate(normalized) else { return nil }
+        return normalized
     }
 
     private static func substring(_ text: NSString, at range: NSRange) -> String? {

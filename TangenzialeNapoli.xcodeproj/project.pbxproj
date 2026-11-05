@@ -258,7 +258,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "A56 Napoli";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Quando usi la tua posizione o controlli un preferito, le coordinate vengono inviate a Mappe di Apple per calcolare il percorso.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Quando usi la tua posizione o controlli un preferito, le coordinate vengono inviate a Mappe di Apple per trovare l’indirizzo di partenza e calcolare il percorso.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -297,7 +297,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "A56 Napoli";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Quando usi la tua posizione o controlli un preferito, le coordinate vengono inviate a Mappe di Apple per calcolare il percorso.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Quando usi la tua posizione o controlli un preferito, le coordinate vengono inviate a Mappe di Apple per trovare l’indirizzo di partenza e calcolare il percorso.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

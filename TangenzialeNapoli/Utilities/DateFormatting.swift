@@ -20,6 +20,8 @@ nonisolated enum ClosureFormat {
         date.formatted(dateStyle.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
     }
 
+    static let timingNote = "Orari discordanti. Si applica la fascia più ampia."
+
     /// "lun 16 giugno", day label for cards and section headers.
     static func dayLabel(_ date: Date) -> String {
         date.formatted(
@@ -29,7 +31,7 @@ nonisolated enum ClosureFormat {
 
     /// "22:00 – 06:00" for the closure's time window. When the closure crosses
     /// midnight the end gets a day offset, e.g. "22:00 – 06:00 (+1)".
-    static func timeRange(_ closure: RoadClosure) -> String {
+    static func timeRange(_ closure: RoadClosure, includesTimingNote: Bool = true) -> String {
         if closure.hasUnpublishedEnd == true { return "Fine non comunicata" }
         let start = timeLabel(closure.start)
         let end = timeLabel(closure.end)
@@ -39,16 +41,16 @@ nonisolated enum ClosureFormat {
             to: calendar.startOfDay(for: closure.end)
         ).day ?? 0
         let interval = daySpan > 0 ? "\(start) – \(end) (+\(daySpan))" : "\(start) – \(end)"
-        return closure.reportedWindow == nil ? interval : "\(interval) · da verificare"
+        return includesTimingNote && closure.reportedWindow != nil ? "\(interval) · fascia più ampia" : interval
     }
 
     /// End copy for a closure already in progress. Includes the date when the
     /// closure does not end today, so a multi-day notice does not look like it
     /// finishes this morning.
-    static func endLabel(_ closure: RoadClosure, reference: Date = .now) -> String {
+    static func endLabel(_ closure: RoadClosure, reference: Date = .now, includesTimingNote: Bool = true) -> String {
         if closure.hasUnpublishedEnd == true { return "Fine non comunicata" }
         let time = timeLabel(closure.end)
-        let warning = closure.reportedWindow == nil ? "" : " · da verificare"
+        let warning = includesTimingNote && closure.reportedWindow != nil ? " · fascia più ampia" : ""
         guard !calendar.isDate(closure.end, inSameDayAs: reference) else {
             return "fino alle \(time)\(warning)"
         }

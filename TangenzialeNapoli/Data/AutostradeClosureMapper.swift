@@ -84,7 +84,7 @@ nonisolated enum AutostradeClosureMapper {
             if !discordant.isEmpty {
                 var timing = issue(for: event, occurrenceCount: discordant.count)
                 timing.detail = "Orari discordanti"
-                timing.coveredByMappedWindow = !discordant.contains(where: \.hasUncoveredTimes)
+                timing.coveredByMappedWindow = true
                 issues.append(timing)
             }
         }
@@ -272,8 +272,6 @@ nonisolated enum AutostradeClosureMapper {
         var end: Date
         let sourceStart: Date
         var reportedWindow: RoadClosure.ReportedWindow?
-        var hasUncoveredTimes = false
-
         init(start: Date, end: Date) {
             self.start = start
             self.end = end
@@ -307,35 +305,32 @@ nonisolated enum AutostradeClosureMapper {
 
     private static func compareBounds(_ windows: [Occurrence], event: AutostradeEvent) -> [Occurrence] {
         var windows = windows.sorted { $0.start < $1.start }
-        guard let first = windows.first, let last = windows.last else { return windows }
+        guard let first = windows.first,
+              let lastIndex = windows.indices.max(by: { windows[$0].end < windows[$1].end })
+        else { return windows }
+        let last = windows[lastIndex]
         var published = [RoadClosure.ReportedWindow]()
         if let start = sanitizedDate(event.dSta), let end = sanitizedDate(event.dSto), start < end {
             published.append(.init(start: start, end: end))
         }
         if let text = NoticeText.plannedBounds(in: event.tDesIt ?? "") { published.append(text) }
-        // An event can repeat nightly. Compare its overall start/end with the
-        // outer boundaries only, so a mismatch never fills the daytime gaps.
-        for bound in published {
-            if bound.start != first.start {
-                windows[0].reportedWindow = .init(start: bound.start, end: windows.count == 1 ? bound.end : first.end)
-                if abs(bound.start.timeIntervalSince(first.start)) <= 3 * 3600 {
-                    windows[0].start = min(windows[0].start, bound.start)
-                }
-            }
-            if bound.end != last.end {
-                let i = windows.count - 1
-                windows[i].reportedWindow = .init(start: windows.count == 1 ? bound.start : last.start, end: bound.end)
-                if abs(bound.end.timeIntervalSince(last.end)) <= 3 * 3600 {
-                    windows[i].end = max(windows[i].end, bound.end)
-                }
-            }
+        // Apply the earliest start and latest end to the outer occurrences.
+        // The event-wide bounds leave the gaps between nightly windows intact.
+        for bound in published where bound.start != first.start {
+            windows[0].start = min(windows[0].start, bound.start)
+            windows[0].reportedWindow = windows.count == 1
+                ? bound : .init(start: min(bound.start, first.end), end: first.end)
         }
-        // The route can rule out a mapped closure outside its conservative
-        // window only if every published boundary is accounted for.
-        windows[0].hasUncoveredTimes = published.contains { $0.start < windows[0].start }
-        let lastIndex = windows.count - 1
-        if published.contains(where: { $0.end > windows[lastIndex].end }) {
-            windows[lastIndex].hasUncoveredTimes = true
+        for bound in published where bound.end != last.end {
+            windows[lastIndex].end = max(windows[lastIndex].end, bound.end)
+            windows[lastIndex].reportedWindow = windows.count == 1
+                ? bound : .init(start: last.start, end: max(bound.end, last.start))
+        }
+        if windows[0].start < first.start {
+            windows[0].reportedWindow = .init(start: first.start, end: first.end)
+        }
+        if windows[lastIndex].end > last.end {
+            windows[lastIndex].reportedWindow = .init(start: last.start, end: last.end)
         }
         return windows
     }
@@ -345,9 +340,12 @@ nonisolated enum AutostradeClosureMapper {
     static func sanitizedDate(_ milliseconds: Double?) -> Date? {
         guard let milliseconds else { return nil }
         let date = Date(timeIntervalSince1970: milliseconds / 1000)
+        return isPlausibleDate(date) ? date : nil
+    }
+
+    static func isPlausibleDate(_ date: Date) -> Bool {
         let lowerBound = Date(timeIntervalSince1970: 1_577_836_800)   // 2020-01-01
         let upperBound = Date.now.addingTimeInterval(2 * 365 * 24 * 3600)
-        guard date >= lowerBound, date <= upperBound else { return nil }
-        return date
+        return date >= lowerBound && date <= upperBound
     }
 }

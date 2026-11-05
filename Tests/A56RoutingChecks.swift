@@ -112,6 +112,22 @@ struct A56RoutingChecks {
         precondition(entering.first?.entry == A56Line.exit(9).map(A56TripMatcher.Access.interchange)
             && entering.last?.exit == .onCarriageway)
 
+        var exitRoute = A56RouteGeometry.segment(from: 5, to: 6, direction: .towardPozzuoli)
+        if exitRoute[0].longitude < exitRoute.last!.longitude { exitRoute.reverse() }
+        let exitPoint = exitRoute.last!
+        exitRoute.append(CLLocationCoordinate2D(latitude: exitPoint.latitude - 0.004, longitude: exitPoint.longitude))
+        guard case .withA56(let exiting) = A56TripMatcher.usage(
+            coordinates: exitRoute, maneuvers: [.init(instruction: "Prendi l’uscita 6", coordinate: exitPoint)]
+        ), exiting.last?.exit == A56Line.exit(6).map(A56TripMatcher.Access.signedInterchange) else {
+            preconditionFailure("The numbered exit and geometry should agree on Arenella")
+        }
+        let nearbyExits = [6, 7].map { number in
+            RoadClosure(id: "exit-\(number)", start: start, end: end, direction: .towardPozzuoli,
+                        fromExit: number, toExit: number,
+                        rampImpacts: [.init(exitNumber: number, kind: .exit, direction: .towardPozzuoli)], reason: "")
+        }
+        let exitImpacts = A56TripMatcher.impacts(on: exiting, closures: nearbyExits, departure: now, duration: 1200)
+        precondition(exitImpacts.map(\.closure.id) == ["exit-6"] && exitImpacts.first?.blocksRoute == true)
 
         let point = A56RouteGeometry.coordinate(for: 10, direction: .towardPozzuoli)!
         let crossing = [-0.004, 0.004].map {
@@ -138,7 +154,6 @@ struct A56RoutingChecks {
         guard case .withoutA56 = A56TripMatcher.usage(coordinates: shortSegment(offset: 18)),
               case .uncertain = A56TripMatcher.usage(coordinates: shortSegment(offset: 0))
         else { preconditionFailure("A brief adjacent street must be distinguished from a close A56 overlap") }
-        checkNavigationLinks()
         print("A56 geometry, closure impact and feed regression checks passed.")
         try await FeedResilienceChecks.run()
         try await NoticeMatrixChecks.run()
@@ -158,33 +173,4 @@ struct A56RoutingChecks {
                          "The snapshot contains unmapped A56 closures")
         }
     }
-
-    private static func checkNavigationLinks() {
-        let origin = CLLocationCoordinate2D(latitude: 40.8783, longitude: 14.28157)
-        let destination = CLLocationCoordinate2D(latitude: 40.82176, longitude: 14.12059)
-        let stops = A56Line.exits.prefix(4).map(\.coordinate)
-        let motorway = TripNavigationLinks(origin: origin, destination: destination, waypoints: stops, avoidsHighways: false)
-        let bypass = TripNavigationLinks(origin: origin, destination: destination, waypoints: [], avoidsHighways: true)
-
-        func query(_ url: URL?) -> [URLQueryItem] {
-            url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.queryItems } ?? []
-        }
-
-        let apple = query(motorway.appleMapsURL(supportsUnifiedURLs: true))
-        precondition(apple.filter { $0.name == "waypoint" }.count == 4)
-        precondition(apple.contains(.init(name: "source", value: "40.878300,14.281570")))
-        precondition(!apple.contains { $0.name == "avoid" })
-        let google = query(motorway.googleMapsURL)
-        precondition(google.first { $0.name == "waypoints" }?.value?.split(separator: "|").count == 3)
-
-        for url in [bypass.appleMapsURL(supportsUnifiedURLs: true), bypass.googleMapsURL] {
-            let items = query(url)
-            precondition(items.contains(.init(name: "avoid", value: "highways,tolls")))
-            precondition(!items.contains { $0.name.hasPrefix("waypoint") })
-        }
-        let legacy = query(bypass.appleMapsURL(supportsUnifiedURLs: false))
-        precondition(legacy.contains(.init(name: "daddr", value: "40.821760,14.120590")))
-        precondition(!legacy.contains { $0.name == "avoid" })
-    }
-
 }

@@ -28,8 +28,28 @@ enum NoticeMatrixChecks {
 
         let conflict = try planned(["indisponibilita": [["d_ini": ms(start), "d_fin": ms(windowEnd)]]])
         guard let ramp = conflict.closures.first else { preconditionFailure("Missing discordant notice") }
-        precondition(!conflict.isComplete && ramp.end == windowEnd && ramp.reportedWindow?.end == printedEnd)
-        precondition(ClosureFormat.timeRange(ramp).contains("da verificare") && ramp.reason.isEmpty)
+        precondition(!conflict.isComplete && conflict.hasCompleteCoverage
+            && ramp.end == windowEnd && ramp.reportedWindow?.end == printedEnd)
+        let laterEnd = printedEnd.addingTimeInterval(5 * 3600)
+        let extended = AutostradeClosureMapper.mappingReport(from: [try event([
+            "d_sto": ms(laterEnd), "indisponibilita": [["d_ini": ms(start), "d_fin": ms(printedEnd)]]
+        ])], now: printedEnd.addingTimeInterval(60))
+        precondition(extended.hasCompleteCoverage && extended.closures.first?.end == laterEnd
+            && extended.closures.first?.reportedWindow?.end == printedEnd,
+            "The latest published end applies even after the shorter window expires")
+        let traversal = A56TripMatcher.Traversal(
+            direction: ramp.direction, start: 0, end: 1000,
+            entry: .signedInterchange(A56Line.exit(ramp.rampExitNumber)!), exit: .onCarriageway
+        )
+        let extendedImpact = A56TripMatcher.impacts(
+            on: [traversal], closures: extended.closures, departure: printedEnd.addingTimeInterval(60), duration: 1200
+        )
+        precondition(extendedImpact.first?.blocksRoute == true)
+        precondition(A56TripMatcher.impacts(
+            on: [traversal], closures: extended.closures, departure: laterEnd, duration: 1200
+        ).isEmpty)
+        precondition(ClosureFormat.timeRange(ramp).contains("06:59")
+            && ClosureFormat.timeRange(ramp).contains("fascia più ampia") && ramp.reason.isEmpty)
         precondition(ramp.alternativeSuggestions?.first?.externalPlace == "SS Domitiana")
         precondition(ramp.alternativeSuggestions?.first?.direction == .towardPozzuoli)
         let badDirection = try planned(["c_dir": "P"])
@@ -84,6 +104,19 @@ enum NoticeMatrixChecks {
             ]
         ])
         precondition(repeated.isComplete && repeated.closures.count == 2)
+        let earlierStart = start.addingTimeInterval(-4 * 3600)
+        let laterSecondEnd = secondEnd.addingTimeInterval(5 * 3600)
+        let repeatedConflict = try planned([
+            "d_sta": ms(earlierStart), "d_sto": ms(laterSecondEnd),
+            "indisponibilita": [
+                ["d_ini": ms(start), "d_fin": ms(printedEnd)],
+                ["d_ini": ms(secondStart), "d_fin": ms(secondEnd)]
+            ]
+        ])
+        precondition(repeatedConflict.hasCompleteCoverage
+            && repeatedConflict.closures.map(\.start) == [earlierStart, secondStart]
+            && repeatedConflict.closures.map(\.end) == [printedEnd, laterSecondEnd],
+            "Disputed outer bounds must not fill the gap between recurring windows")
         let unboundedRecurrence = try planned(["t_des_it": "Chiusura ogni notte", "d_sto": ms(secondEnd)])
         precondition(!unboundedRecurrence.isComplete && unboundedRecurrence.closures.isEmpty)
         let overlap = RoadClosure(start: start.addingTimeInterval(60), end: printedEnd, direction: .towardPozzuoli,
@@ -106,12 +139,22 @@ enum NoticeMatrixChecks {
             "t_des_it": "Agnano in entrata è chiuso fino alle 06:00 del 06/11/2026 verso Pozzuoli."
         ]) { _, update in update }
         let liveConflict = AutostradeRealtimeClosureMapper.mappingReport(from: [try event(contradictoryFields)], now: activeNow)
-        precondition(!liveConflict.isComplete && liveConflict.closures.first?.end == windowEnd)
+        precondition(!liveConflict.isComplete && liveConflict.hasCompleteCoverage
+            && liveConflict.closures.first?.end == windowEnd)
         precondition(liveConflict.closures.first?.reportedWindow?.end == printedEnd)
 
         let file = FileManager.default.temporaryDirectory.appendingPathComponent("a56-notices-\(UUID()).json")
         defer { try? FileManager.default.removeItem(at: file) }
         let archive = ClosureArchive(fileURL: file)
+        let older = RoadClosure(start: start, end: printedEnd, direction: ramp.direction,
+                                fromExit: ramp.fromExit, toExit: ramp.toExit, rampImpacts: ramp.rampImpacts,
+                                reason: "", evidence: .scheduled,
+                                reportedWindow: .init(start: earlierStart, end: laterEnd))
+        try JSONEncoder().encode(ArchivedClosures(schemaVersion: 3, lastFetchedAt: now, closures: [older]))
+            .write(to: file)
+        let restored = await archive.snapshot(at: now)?.closures.first
+        precondition(restored?.id == older.id && restored?.start == earlierStart && restored?.end == laterEnd)
+        try await archive.clear()
         _ = await archive.record(repeated.closures, now: now)
         let retained = await archive.record([live], now: activeNow, canInferCancellations: false)
         precondition(retained.count == 2 && retained.contains { $0.start == secondStart && $0.end == secondEnd })

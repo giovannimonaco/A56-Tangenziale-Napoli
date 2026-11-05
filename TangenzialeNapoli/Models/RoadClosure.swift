@@ -28,8 +28,8 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
 
     /// Night closures cross midnight, so `end` may fall on the day after
     /// `start`.
-    let start: Date
-    let end: Date
+    private(set) var start: Date
+    private(set) var end: Date
     /// A conservative interval is shown when sources disagree on its bounds.
     let reportedWindow: ReportedWindow?
     /// A live closure can be published without a reopening time.
@@ -220,17 +220,17 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
         }
     }
 
-    /// Preserve the scheduled start and cover a later end reported live.
+    /// Cover the scheduled window and any earlier start or later end reported live.
     func confirmed(by live: RoadClosure) -> RoadClosure {
         let plannedEnd = scheduledEnd ?? end
         let unpublished = live.hasUnpublishedEnd == true
-        let endChanged = !unpublished && plannedEnd != live.end
+        let windowChanged = live.start < start || (!unpublished && plannedEnd != live.end)
         let plannedDiscrepancy = evidence == .scheduled ? reportedWindow : nil
         let reported = plannedDiscrepancy ?? live.reportedWindow
-            ?? (endChanged || unpublished ? ReportedWindow(start: start, end: min(plannedEnd, live.end)) : nil)
+            ?? (windowChanged || unpublished ? ReportedWindow(start: start, end: min(plannedEnd, live.end)) : nil)
         return RoadClosure(
             id: id,
-            start: start,
+            start: min(start, live.start),
             end: max(plannedEnd, live.end),
             direction: direction,
             affectsBothDirections: affectsBothDirections,
@@ -247,6 +247,13 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
             hasUnpublishedEnd: unpublished ? true : nil,
             scheduledEnd: plannedEnd
         )
+    }
+
+    /// Older versions could retain a conflicting bound without applying it.
+    mutating func coverArchivedSchedule() {
+        guard evidence == .scheduled, let reportedWindow else { return }
+        start = min(start, reportedWindow.start)
+        end = max(end, reportedWindow.end)
     }
 
     /// Copy with the window truncated at `date`. Used when the live feed stops
