@@ -62,7 +62,7 @@ Verifica su simulatore iOS 27.2, testo standard e aspetto chiaro per questi casi
 
 ## Riesecuzione dopo sincronizzazione widget — build 1.0 (8)
 
-15 novembre 2026, conclusa alle **16:03 Europe/Rome**. Su richiesta della centrale, dopo il congelamento `WIDGET_SYNC_READY`, sono stati eseguiti **soltanto i quattro test permanenti `A56UI`**, senza altre fixture o modifiche ai sorgenti. Usato lo stesso simulatore dedicato e la DerivedData della suite dell'app.
+15 novembre 2026, conclusa alle **16:02:36 Europe/Rome**. Su richiesta della centrale, dopo il congelamento `WIDGET_SYNC_READY`, sono stati eseguiti **soltanto i quattro test permanenti `A56UI`**, senza altre fixture o modifiche ai sorgenti. Usato lo stesso simulatore dedicato e la DerivedData della suite dell'app.
 
 **Risultato: TEST SUCCEEDED — 4 test, 4 passati, 0 fallimenti, 0 saltati.**
 

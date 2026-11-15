@@ -14,16 +14,18 @@ Aggiornato il 15 novembre 2026. L'utente comunica nella sola chat centrale; asse
 ## Risultati verificati
 
 - Corrette completezza feed **48/48**, classificazione ingressi/uscite e geometria dei collegamenti. La UI indica i capi fisici e impedisce raccomandazioni di alternative attraversate da chiusure. [Feed](feed-completeness-fix.md), [percorsi](route-boundary-fix.md), [integrazione UI](final-integration-ui.md).
-- **90 test iOS in 9 suite** e controlli standalone passati. Quattro smoke test UI e prove mirate passati prima dell’ultima sincronizzazione; riesecuzione finale in corso. Due tentativi di UI automation sul telefono si sono fermati prima dei test durante l’abilitazione del servizio.
+- **90 test iOS in 9 suite** e controlli standalone passati. Quattro smoke test UI e prove mirate passati; anche la riesecuzione finale dei quattro smoke test sulla build 8 è passata. Due tentativi di UI automation sul telefono si sono fermati prima dei test durante l’abilitazione del servizio.
 - Widget autonomi, small/medium, cache/offline e scadenza. Ora sincronizzazione App Group e richiesta di reload dopo ogni refresh riuscito dell’app: **48 avvisi identici su iPhone firmato**, cache private obsolete rimosse. [Report finale](widget-sync-fix.md).
 - UI iPhone piccolo/grande, chiaro/scuro, testo Accessibilità massimo e bersagli verificati, finitura senza barre decorative. [Audit](ui-ux-audit.md), [finitura](visual-design-review.md).
-- Build **1.0 (8)** installata e avviata sul telefono, archivio Release riuscito. Export finale in verifica; precedente archivio/IPA 7 verificati. App ed estensione iPhone e iOS 18+, entrambi abilitati al medesimo App Group.
+- Build **1.0 (8)** installata e avviata sul telefono, archivio Release ed export IPA 8 verificati con profili App Store. App ed estensione iPhone e iOS 18+, entrambi abilitati al medesimo App Group.
 - Bozza App Store `6782002695`, 1.0 `PREPARE_FOR_SUBMISSION`, nome A56 Napoli, lingua it, Navigation, rilascio manuale, questionario età 4+. Otto screenshot finali caricati e collocati nella bozza. [Anteprima](../AppStore/Preview-it.png).
-- Policy e assistenza pubblicate nel ramo collegato; nuova policy aggiornata per la condivisione locale widget pronta nel checkout. Nessun nuovo binario caricato e nessuna revisione inviata.
+- Policy e assistenza pubblicate nel ramo collegato; nuova policy per la condivisione widget pubblicata e confrontata senza login con il file locale. Nessun nuovo binario caricato e nessuna revisione inviata.
 
-## Lavori ancora attivi
+## Integrazione tecnica conclusa
 
-Export/firma finale 8, riesecuzione smoke UI, commit/push e conferma CI remota. La prima esecuzione remota ha passato la UI e rilevato una diversa gestione di NaN nell’SDK del runner; correzione esplicita verificata nella suite locale completa. Nessun fallimento viene ignorato o test saltato.
+[CI remota verde](https://github.com/giovannimonaco/A56-Tangenziale-Napoli/actions/runs/43727730056) sul commit sorgenti `f3422b8`: **90 test / 146 esecuzioni**, **4 test UI**, nessun errore o test saltato, runtime iOS 26.5. È confermata anche sul runner la correzione NaN/±infinito. Export/firma 8 e smoke UI locali completati. Convalida del pacchetto Apple `altool --validate-app`: **VERIFY SUCCEEDED, nessun errore**, senza upload/submission.
+
+L’integrazione di queste modifiche è conclusa; la distribuzione richiede i punti esterni sotto. Il [report di preparazione](app-store/readiness.md) e il [riepilogo macchina](app-store/validation-summary.json) conservano gli esiti e i limiti. Le prove non attestano runtime iOS 18, un nuovo test UI sul telefono, tempi di ridisegno WidgetKit o una revisione umana VoiceOver.
 
 ## Pubblicazione e decisioni esterne
 

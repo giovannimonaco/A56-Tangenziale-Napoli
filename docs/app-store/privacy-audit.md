@@ -38,6 +38,6 @@ Apple richiede il manifest anche nel bundle di ciascun eseguibile che usa API co
 - [ ] Selezione posizione/preferito: consenso contestuale, revoca e posizione approssimativa gestite; nessuna raccolta in background.
 - [ ] Osservare il traffico della build finale, includendo suggerimenti, reverse geocoding, feed e widget; non usare endpoint di intercettazione esterni per dati personali.
 - [ ] Preferiti rimossi dopo chiusura e riavvio; cancellazione archivio distinta dai preferiti e dalla cache widget.
-- [ ] Sincronizzazione App Group su dispositivo firmato e conservazione degli avvisi correnti verificate sulla build finale; assenza di posizione nel widget e manifest già controllati.
-- [ ] Policy web pubblicata e leggibile senza login, coerente con testo in **Info → Informativa privacy**, incluso il widget.
-- [ ] Canale privato per richieste riservate definito e verificato; oggi il solo canale accertato è pubblico.
+- [x] Sincronizzazione App Group su dispositivo firmato e conservazione degli avvisi correnti verificate sulla build finale; assenza di posizione nel widget e manifest già controllati.
+- [x] Policy web pubblicata e leggibile senza login, coerente con testo in **Info → Informativa privacy**, incluso il widget.
+- [x] Recapito email privato definito e pubblicato: `mon.giovanni@gmail.com`, riuso autorizzato dall’utente. Non è stata inviata una mail di prova; GitHub resta il canale pubblico separato.

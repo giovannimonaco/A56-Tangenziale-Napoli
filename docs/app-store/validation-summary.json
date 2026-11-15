@@ -1,61 +1,73 @@
 {
   "date": "2026-11-15",
   "version": "1.0",
-  "build": "7",
+  "build": "8",
   "unitTests": {
     "result": "Passed",
-    "passedTests": 70,
+    "passedTests": 90,
     "failedTests": 0,
     "skippedTests": 0,
-    "totalTestCount": 70
+    "totalTestCount": 90,
+    "parameterizedExecutions": 146
   },
   "archive": [
     {
       "bundleId": "com.giovannimonaco.TangenzialeNapoli",
       "version": "1.0",
-      "build": "7",
+      "build": "8",
       "iPhoneOnly": true,
       "minimumOS": "18.0",
-      "manifestPresent": true,
-      "signatureValid": true
+      "privacyManifestPresent": true,
+      "signatureValid": true,
+      "appGroup": "group.com.giovannimonaco.TangenzialeNapoli",
+      "appStoreDistributionProfile": false
     },
     {
       "bundleId": "com.giovannimonaco.TangenzialeNapoli.widgets",
       "version": "1.0",
-      "build": "7",
+      "build": "8",
       "iPhoneOnly": true,
       "minimumOS": "18.0",
-      "manifestPresent": true,
-      "signatureValid": true
+      "privacyManifestPresent": true,
+      "signatureValid": true,
+      "appGroup": "group.com.giovannimonaco.TangenzialeNapoli",
+      "appStoreDistributionProfile": false
     }
   ],
   "ipa": {
-    "ipa": "build/AppStore-1.0-7/TangenzialeNapoli.ipa",
-    "bytes": 7263628,
+    "ipa": "build/AppStore-1.0-8/TangenzialeNapoli.ipa",
+    "bytes": 7308575,
     "items": [
       {
         "bundleId": "com.giovannimonaco.TangenzialeNapoli",
-        "build": "7",
+        "version": "1.0",
+        "build": "8",
         "iPhoneOnly": true,
-        "appStoreDistributionProfile": true,
+        "minimumOS": "18.0",
+        "privacyManifestPresent": true,
         "signatureValid": true,
-        "privacyManifestPresent": true
+        "appGroup": "group.com.giovannimonaco.TangenzialeNapoli",
+        "appStoreDistributionProfile": true
       },
       {
         "bundleId": "com.giovannimonaco.TangenzialeNapoli.widgets",
-        "build": "7",
+        "version": "1.0",
+        "build": "8",
         "iPhoneOnly": true,
-        "appStoreDistributionProfile": true,
+        "minimumOS": "18.0",
+        "privacyManifestPresent": true,
         "signatureValid": true,
-        "privacyManifestPresent": true
+        "appGroup": "group.com.giovannimonaco.TangenzialeNapoli",
+        "appStoreDistributionProfile": true
       }
-    ]
+    ],
+    "sha256": "8e2a9bb208ccb33ebed9c2854b6175f80924bb9825d70f3fa20c54407eef00ef"
   },
   "physicalDeviceFetch": {
-    "lastFetchedAtRome": "2026-11-15T15:30:00.059484+01:00",
+    "lastFetchedAtRome": "2026-11-15T16:01:12.013924+01:00",
     "upcomingClosures": 48,
     "withReportedSegment": 1,
-    "freshFetchWithinFiveMinutes": true
+    "matchesSharedWidgetSnapshotExactly": true
   },
   "appStoreDraft": {
     "appId": "6782002695",
@@ -68,7 +80,9 @@
     "ItalianMetadataMatchesLocal": true,
     "privacyPolicyUrl": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli/blob/review/general-audit/docs/privacy.md",
     "supportUrl": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli/blob/review/general-audit/docs/app-store/support.md",
-    "binaryUploadedByThisTask": false
+    "binaryUploadedByThisTask": false,
+    "reviewNotesMatchLocal": true,
+    "privateReviewContactMatchesExistingDeveloperRecord": true
   },
   "ageRating": {
     "questionnaireMatchesLocal": true,
@@ -78,9 +92,95 @@
   "newBinaryUploaded": false,
   "submittedForReview": false,
   "pending": [
-    "Final UI integration QA",
-    "Remote CI",
     "Data-source reuse conditions",
-    "Final Store declarations and distribution choices"
-  ]
+    "Final Store declarations and distribution choices",
+    "iOS 18 runtime, physical widget redraw and human VoiceOver review",
+    "Upload, processing and selection of new binary before App Review"
+  ],
+  "uiSmokeTests": {
+    "result": "Passed",
+    "passedTests": 4,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "build": "8",
+    "resultBundle": "build/final-sync-ui-tests.xcresult"
+  },
+  "sharedWidgetDeviceVerification": {
+    "build": "8",
+    "signedTargets": [
+      {
+        "bundleId": "com.giovannimonaco.TangenzialeNapoli",
+        "build": "8",
+        "signedAppGroup": "group.com.giovannimonaco.TangenzialeNapoli",
+        "profileAppGroup": "group.com.giovannimonaco.TangenzialeNapoli"
+      },
+      {
+        "bundleId": "com.giovannimonaco.TangenzialeNapoli.widgets",
+        "build": "8",
+        "signedAppGroup": "group.com.giovannimonaco.TangenzialeNapoli",
+        "profileAppGroup": "group.com.giovannimonaco.TangenzialeNapoli"
+      }
+    ],
+    "sharedContainerAccessibleOnDevice": true,
+    "sharedFetchedAtUTC": "2026-11-15T15:01:12.013924+00:00",
+    "matchesAppArchiveTimestamp": true,
+    "matchesAppUpcomingClosuresExactly": true,
+    "currentFutureCount": 48,
+    "complete": true,
+    "offline": false,
+    "widgetLegacyFilesAfterReload": 0,
+    "widgetLegacySnapshotBeforeUpdate": "widget-before-sync.json",
+    "limits": "No physical-device UI automation or redraw timing assertion. Legacy files removed by extension migration; shared data verified via device file service."
+  },
+  "screenshots": {
+    "count": 8,
+    "groups": 2,
+    "eachGroupCount": 4,
+    "allManifestHashesMatchLocal": true,
+    "allImagesReady": true,
+    "placementsMatchManifestIds": true
+  },
+  "publicPolicy": [
+    {
+      "path": "docs/privacy.md",
+      "anonymousStatus": 200,
+      "matchesLocal": true,
+      "sha256": "52dae8480a62ba8b99048201c8c31e04645641eb29e9f863fb60f097f01c8d87"
+    },
+    {
+      "path": "docs/app-store/support.md",
+      "anonymousStatus": 200,
+      "matchesLocal": true,
+      "sha256": "1ff8a0fd199f870e1a18cbb963cfb53749ded8afb4985daa784a9e53b5cbe195"
+    }
+  ],
+  "remoteCI": {
+    "state": "completed",
+    "conclusion": "success",
+    "sourceCommit": "f3422b8732fb9bf94cb2a684170deb65c36fe8f0",
+    "url": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli/actions/runs/43727730056",
+    "jobs": [
+      {
+        "name": "test (A56UI)",
+        "conclusion": "success"
+      },
+      {
+        "name": "test (TangenzialeNapoli)",
+        "conclusion": "success"
+      }
+    ],
+    "unitTests": 90,
+    "parameterizedExecutions": 146,
+    "uiTests": 4,
+    "runtime": "iOS 26.5",
+    "xcode": "26.6"
+  },
+  "applePackageValidation": {
+    "result": "VERIFY SUCCEEDED",
+    "errors": 0,
+    "tool": "Apple altool --validate-app",
+    "exitCode": 0,
+    "binaryUploaded": false,
+    "log": "build/apple-build8-validation.log"
+  }
 }
