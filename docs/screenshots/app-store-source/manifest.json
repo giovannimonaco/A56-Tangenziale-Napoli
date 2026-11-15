@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "device": "A56 UI Large / iPhone 18 Pro Max",
+  "deviceUDID": "C3144A48-E9E9-430C-8FAD-34CCC0CE3A6D",
+  "runtime": "iOS 27.2",
+  "xcode": "27.2",
+  "bundleIdentifier": "com.giovannimonaco.TangenzialeNapoli",
+  "appVersion": "1.0",
+  "build": "7",
+  "appearance": "light",
+  "language": "Italian",
+  "locale": "it_IT",
+  "dynamicType": "large (default)",
+  "captureMethod": "Native XCUIApplication.screenshot().pngRepresentation, without editing or artwork",
+  "launchDataArgument": "--sample-data",
+  "statusBar": "simctl override 09:41, Wi-Fi 3 bars, battery 100% discharging",
+  "timestampDisclosure": "09:41 is a cosmetic status-bar override. In-app update timestamps show the actual capture session time. Fixture scenes recaptured after the final neutral visual finish at 15:12–15:13 Europe/Rome on 2026-11-15; map recaptured again at 15:20 after verified MapKit anchor fix. Privacy scene remains from 14:44. Notices are demonstrative fixtures dated 2026-11-15.",
+  "files": [
+    {
+      "filename": "fixture-map.png",
+      "width": 1320,
+      "height": 2868,
+      "bytes": 1878756,
+      "sha256": "691d13b22baad7d2f2efb46a89d22b96e89d84fe8d335d3d39199ad426528984",
+      "capturedAt": "2026-11-15T15:20:45.604899+01:00",
+      "provenance": "Avvisi dimostrativi SampleClosures: mappa Programmate, entrata Corso Malta. Tile Mappe Apple scaricati realmente; geometria A56 OpenStreetMap inclusa nell’app."
+    },
+    {
+      "filename": "fixture-programmate.png",
+      "width": 1320,
+      "height": 2868,
+      "bytes": 534495,
+      "sha256": "dd307dbf6ed7f0f8ca089b5d00cc1358a36858bbde9ffb596d75faf06ee87e53",
+      "capturedAt": "2026-11-15T15:12:43.258504+01:00",
+      "provenance": "Avvisi dimostrativi SampleClosures: elenco delle chiusure programmate."
+    },
+    {
+      "filename": "fixture-dettaglio-rampa.png",
+      "width": 1320,
+      "height": 2868,
+      "bytes": 344955,
+      "sha256": "a940fe9f32db877b99616b78574d351c1440a795f9a3cc3f04707e90b20fe540",
+      "capturedAt": "2026-11-15T15:12:47.765729+01:00",
+      "provenance": "Avviso dimostrativo SampleClosures: entrata Corso Malta chiusa 21:00–05:00 (+1)."
+    },
+    {
+      "filename": "fixture-avvisi-mapkit-percorso.png",
+      "width": 1320,
+      "height": 2868,
+      "bytes": 562572,
+      "sha256": "68a623f41aa581092b36e3ed7a8fc85f60cf733c06a1d8a3e9bbbd511099045b",
+      "capturedAt": "2026-11-15T15:13:14.950589+01:00",
+      "provenance": "Itinerario MapKit reale Piazza Garibaldi Napoli → Via Campana Pozzuoli; avvisi dimostrativi SampleClosures. La schermata nel suo complesso non rappresenta viabilità live."
+    },
+    {
+      "filename": "info-privacy.png",
+      "width": 1320,
+      "height": 2868,
+      "bytes": 409308,
+      "sha256": "abc370bcb43efa9e6f98b46d86402b1c42b6e84dd2e0dfc904a3c73caa2ebb9c",
+      "capturedAt": "2026-11-15T14:44:42.376292+01:00",
+      "provenance": "Contenuto informativo statico dell’app aggiornata; avvio con fixture, nessuna affermazione sulla viabilità corrente."
+    }
+  ],
+  "visualFinish": "Neutral card surfaces without decorative sidebars, colored borders or accent-edge substitutes. System typography, semantic road lines and status symbols.",
+  "finalMapVerification": "Native checkout Debug app+widget build succeeded. Pro Max exact Camaldoli/exit 8 tap and recapture passed; independent SE AX5 dark/increase contrast/reduce motion exact exit 8 tap, tray scrolling and close passed."
+}

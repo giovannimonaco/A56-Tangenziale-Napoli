@@ -1,0 +1,41 @@
+name: A56 iPhone tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: a56-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-26
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        scheme: [TangenzialeNapoli, A56UI]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Show Xcode version
+        run: xcodebuild -version
+      - name: Run tests on an isolated iPhone
+        env:
+          A56_TEST_OUTPUT: ${{ runner.temp }}/A56TestResults
+          A56_TEST_SCHEME: ${{ matrix.scheme }}
+        run: bash Tests/test-xcode.sh
+      - name: Retain test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: a56-test-results-${{ matrix.scheme }}
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/A56TestResults/A56Tests.xcresult
+            ${{ runner.temp }}/A56TestResults/xcodebuild.log
+            ${{ runner.temp }}/A56TestResults/summary.json

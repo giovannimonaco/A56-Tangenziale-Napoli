@@ -1,0 +1,110 @@
+Attributes: Application, 0x10a0292c0, pid: 12909, label: 'IntegrationHarness'
+Element subtree:
+ →Application, 0x10a0292c0, pid: 12909, label: 'IntegrationHarness'
+    Window (Main), 0x10a02bd40, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10a02b980, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10a02b480, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x10a02b5c0, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x10a02a800, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x10a02abc0, {{0.0, 0.0}, {402.0, 874.0}}
+                NavigationBar, 0x10a02a080, {{0.0, 62.0}, {402.0, 54.0}}, identifier: 'Mappa A56'
+                  Other, 0x10a029e00, {{20.0, 66.0}, {36.0, 36.0}}
+                    Other, 0x10a02b700, {{20.0, 66.0}, {36.0, 36.0}}
+                      Button, 0x10a02b0c0, {{24.7, 66.0}, {27.0, 36.0}}, identifier: 'arrow.clockwise', label: 'Aggiorna dati'
+                  StaticText, 0x10a02af80, {{155.3, 73.7}, {91.3, 20.7}}, label: 'Mappa A56'
+                Other, 0x10a02ad00, {{0.0, 0.0}, {402.0, 874.0}}
+                  Other, 0x10a028a00, {{0.0, 0.0}, {402.0, 874.0}}
+                    Other, 0x10a029f40, {{0.0, 0.0}, {402.0, 874.0}}
+                      Other, 0x10a028500, {{0.0, 0.0}, {402.0, 874.0}}
+                        Other, 0x10a028dc0, {{0.0, 116.0}, {402.0, 724.0}}
+                          Other, 0x10a029180, {{0.0, 0.0}, {402.0, 874.0}}
+                            Map, 0x10a028f00, {{0.0, 0.0}, {402.0, 874.0}}, value: {"camera":{"altitu...
+                            Other, 0x10a029040, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'AnnotationContainer'
+                              Other, 0x10a02be80, {{310.0, 458.3}, {48.0, 48.0}}, label: '2 · Secondigliano'
+                                Other, 0x10a02b340, {{310.0, 458.3}, {48.0, 48.0}}
+                                  Other, 0x10a02aa80, {{310.0, 458.3}, {48.0, 48.0}}
+                                    Button, 0x10a029900, {{310.0, 458.3}, {48.0, 48.0}}, label: 'Uscita 2 · Secondigliano', value: Tratto chiuso
+                              Other, 0x10a02a580, {{287.0, 458.3}, {48.0, 48.0}}, label: '4 · Corso Malta'
+                                Other, 0x10a02a300, {{287.0, 458.3}, {48.0, 48.0}}
+                                  Other, 0x10a029b80, {{287.0, 458.3}, {48.0, 48.0}}
+                                    Button, 0x10a028140, {{287.0, 458.3}, {48.0, 48.0}}, label: 'Uscita 4 · Corso Malta / Centro Direzionale / Stazione / Porto', value: Nessuna chiusura s...
+                              Other, 0x10a02b840, {{301.3, 474.3}, {48.0, 48.0}}, label: '3 · Doganella'
+                                Other, 0x10a029680, {{301.3, 474.3}, {48.0, 48.0}}
+                                  Other, 0x10a02a940, {{301.3, 474.3}, {48.0, 48.0}}
+                                    Button, 0x10a02a440, {{301.3, 474.3}, {48.0, 48.0}}, label: 'Uscita 3 · Doganella / Piazza Carlo III / Centro storico', value: Nessuna chiusura s...
+                              Other, 0x10a02ae40, {{242.7, 465.3}, {48.0, 48.0}}, label: '6 · Arenella'
+                                Other, 0x10a02a6c0, {{242.7, 465.3}, {48.0, 48.0}}
+                                  Other, 0x10a028640, {{242.7, 465.3}, {48.0, 48.0}}
+                                    Button, 0x107284dc0, {{242.7, 465.3}, {48.0, 48.0}}, label: 'Uscita 6 · Arenella / Centro storico / Quartieri Spagnoli', value: Nessuna chiusura s...
+                              Other, 0x1072875c0, {{253.7, 482.3}, {48.0, 48.0}}, label: '5 · Capodimonte'
+                                Other, 0x107287700, {{253.7, 482.3}, {48.0, 48.0}}
+                                  Other, 0x107284640, {{253.7, 482.3}, {48.0, 48.0}}
+                                    Button, 0x107287840, {{253.7, 482.3}, {48.0, 48.0}}, label: 'Uscita 5 · Capodimonte / Rione Sanità', value: Nessuna chiusura s...
+                              Other, 0x10aa80000, {{311.7, 441.3}, {48.0, 48.0}}, label: '1 · Capodichino'
+                                Other, 0x10aa80140, {{311.7, 441.3}, {48.0, 48.0}}
+                                  Other, 0x10aa80280, {{311.7, 441.3}, {48.0, 48.0}}
+                                    Button, 0x10aa803c0, {{311.7, 441.3}, {48.0, 48.0}}, label: 'Uscita 1 · Capodichino / Aeroporto', value: Tratto chiuso
+                              Other, 0x10aa80500, {{48.0, 504.0}, {48.0, 48.0}}, label: '13 · Cuma'
+                                Other, 0x10aa80640, {{48.0, 504.0}, {48.0, 48.0}}
+                                  Other, 0x10aa80780, {{48.0, 504.0}, {48.0, 48.0}}
+                                    Button, 0x10aa808c0, {{48.0, 504.0}, {48.0, 48.0}}, label: 'Uscita 13 · Cuma', value: Nessuna chiusura s...
+                              Other, 0x10aa80a00, {{165.0, 537.3}, {48.0, 48.0}}, label: 'Ingresso Italia ’90'
+                                Other, 0x10aa80b40, {{165.0, 537.3}, {48.0, 48.0}}
+                                  Other, 0x10aa80c80, {{165.0, 537.3}, {48.0, 48.0}}
+                                    Button, 0x10aa80dc0, {{165.0, 537.3}, {48.0, 48.0}}, label: 'Italia ’90, solo ingresso in entrambe le direzioni', value: Nessuna chiusura s...
+                              Other, 0x10aa80f00, {{238.7, 491.3}, {48.0, 48.0}}, label: '7 · Zona Ospedaliera'
+                                Other, 0x10aa81040, {{238.7, 491.3}, {48.0, 48.0}}
+                                  Other, 0x10aa81180, {{238.7, 491.3}, {48.0, 48.0}}
+                                    Button, 0x10aa812c0, {{238.7, 491.3}, {48.0, 48.0}}, label: 'Uscita 7 · Zona Ospedaliera', value: Nessuna chiusura s...
+                              Other, 0x10aa81400, {{218.7, 481.3}, {48.0, 48.0}}, label: '8 · Camaldoli'
+                                Other, 0x10aa81540, {{218.7, 481.3}, {48.0, 48.0}}
+                                  Other, 0x10aa81680, {{218.7, 481.3}, {48.0, 48.0}}
+                                    Button, 0x10aa817c0, {{218.7, 481.3}, {48.0, 48.0}}, label: 'Uscita 8 · Camaldoli', value: Nessuna chiusura s...
+                              Other, 0x10aa81900, {{191.7, 512.7}, {48.0, 48.0}}, label: '10 · Fuorigrotta'
+                                Other, 0x10aa81a40, {{191.7, 512.7}, {48.0, 48.0}}
+                                  Other, 0x10aa81b80, {{191.7, 512.7}, {48.0, 48.0}}
+                                    Button, 0x10aa81cc0, {{191.7, 512.7}, {48.0, 48.0}}, label: 'Uscita 10 · Fuorigrotta / Stadio / Edenlandia', value: Nessuna chiusura s...
+                              Other, 0x10aa81e00, {{140.3, 509.3}, {48.0, 48.0}}, label: '11 · Agnano'
+                                Other, 0x10aa81f40, {{140.3, 509.3}, {48.0, 48.0}}
+                                  Other, 0x10aa82080, {{140.3, 509.3}, {48.0, 48.0}}
+                                    Button, 0x10aa821c0, {{140.3, 509.3}, {48.0, 48.0}}, label: 'Uscita 11 · Agnano / Ippodromo / Edenlandia', value: Nessuna chiusura s...
+                              Other, 0x10aa82300, {{42.0, 531.7}, {48.0, 48.0}}, label: '14 · Arco Felice'
+                                Other, 0x10aa82440, {{42.0, 531.7}, {48.0, 48.0}}
+                                  Other, 0x10aa82580, {{42.0, 531.7}, {48.0, 48.0}}
+                                    Button, 0x10aa826c0, {{42.0, 531.7}, {48.0, 48.0}}, label: 'Uscita 14 · Arco Felice / Pozzuoli / Bacoli', value: Nessuna chiusura s...
+                              Other, 0x10aa82800, {{215.3, 519.3}, {48.0, 48.0}}, label: '9 · Vomero'
+                                Other, 0x10aa82940, {{215.3, 519.3}, {48.0, 48.0}}
+                                  Other, 0x10aa82a80, {{215.3, 519.3}, {48.0, 48.0}}
+                                    Button, 0x10aa82bc0, {{215.3, 519.3}, {48.0, 48.0}}, label: 'Uscita 9 · Vomero / Posillipo', value: Nessuna chiusura s...
+                              Other, 0x10aa82d00, {{77.0, 532.0}, {48.0, 48.0}}, label: '12 · Via Campana'
+                                Other, 0x10aa82e40, {{77.0, 532.0}, {48.0, 48.0}}
+                                  Other, 0x10aa82f80, {{77.0, 532.0}, {48.0, 48.0}}
+                                    Button, 0x10aa830c0, {{77.0, 532.0}, {48.0, 48.0}}, label: 'Uscita 12 · Via Campana / Pozzuoli', value: Nessuna chiusura s...
+                          Link, 0x10aa83200, {{70.2, 819.3}, {28.6, 10.7}}, label: 'Legal'
+                        Other, 0x10aa83340, {{24.0, 136.0}, {354.0, 66.0}}
+                          Button, 0x10aa83480, {{28.0, 140.0}, {171.0, 58.0}}, label: 'Verso Pozzuoli, 1 tratto', Selected
+                            Image, 0x10aa835c0, {{41.0, 154.0}, {14.3, 11.7}}, identifier: 'arrow.left', label: 'Left'
+                            StaticText, 0x10aa83700, {{62.3, 152.2}, {52.3, 15.3}}, label: 'Pozzuoli'
+                            StaticText, 0x10aa83840, {{51.0, 172.5}, {38.7, 13.3}}, label: '1 tratto'
+                          Button, 0x10aa83980, {{203.0, 140.0}, {171.0, 58.0}}, label: 'Verso Capodichino, Nessuna chiusura segnalata'
+                            StaticText, 0x10aa83ac0, {{250.0, 151.7}, {89.7, 18.0}}, label: 'Capodichino'
+                            Image, 0x10aa83c00, {{346.7, 155.0}, {14.3, 11.7}}, identifier: 'arrow.right', label: 'Right'
+                            StaticText, 0x10aa83d40, {{227.3, 174.7}, {135.7, 11.7}}, label: 'Nessuna chiusura segnalata'
+                        Button, 0x10aa83e80, {{28.0, 216.0}, {171.0, 44.0}}, label: 'Adesso', Selected
+                        Button, 0x1130fc000, {{203.0, 216.0}, {171.0, 44.0}}, label: 'Programmate'
+                        StaticText, 0x1130fc140, {{28.7, 274.8}, {136.3, 13.3}}, label: 'Aggiornato alle 15:36', Selected
+                          Image, 0x1130fc280, {{28.7, 275.0}, {13.0, 13.0}}, identifier: 'checkmark.seal.fill', label: 'Verified', Selected
+                          StaticText, 0x1130fc3c0, {{48.3, 274.8}, {116.7, 13.3}}, label: 'Aggiornato alle 15:36'
+                        Button, 0x1130fc500, {{10.0, 309.0}, {56.0, 56.0}}, identifier: 'list.bullet', label: 'Apri legenda'
+                        Other, 0x1130fc640, {{364.0, 337.0}, {0.0, 0.0}}
+                          Button, 0x1130fc780, {{364.0, 337.0}, {0.0, 0.0}}, label: 'Compass', value: Heading: 360 degre...
+                        Link, 0x1130fc8c0, {{278.0, 790.0}, {114.0, 44.0}}, label: 'Attribuzione dei dati OpenStreetMap'
+                Toolbar, 0x1130fca00, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar'
+                  Other, 0x1130fcb40, {{0.0, 0.0}, {402.0, 874.0}}
+Path to element:
+ →Application, 0x10a0292c0, pid: 12909, label: 'IntegrationHarness'
+Query chain:
+ →Find: Target Application 'com.a56.final.integration'
+  Output: {
+    Application, 0x1130fcc80, pid: 12909, label: 'IntegrationHarness'
+  }

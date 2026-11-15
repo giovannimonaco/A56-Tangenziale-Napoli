@@ -5,6 +5,7 @@ struct HomeView: View {
     @State private var isInfoPresented = false
     @AppStorage("selectedDirection") private var direction: Direction = .towardPozzuoli
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(viewModel: ClosuresViewModel? = nil) {
         _viewModel = State(initialValue: viewModel ?? ClosuresViewModel())
@@ -55,7 +56,9 @@ struct HomeView: View {
                     }
                 }
                 .safeAreaInset(edge: .top, spacing: 0) {
-                    closuresControlPanel
+                    if !dynamicTypeSize.isAccessibilitySize {
+                        closuresControlPanel
+                    }
                 }
                 .refreshable { await viewModel.load() }
                 .onChange(of: direction) { _, newValue in
@@ -102,7 +105,10 @@ struct HomeView: View {
         }
 
         return ScrollView {
-            LazyVStack(alignment: .leading, spacing: 18) {
+            LazyVStack(alignment: .leading, spacing: 20) {
+                if dynamicTypeSize.isAccessibilitySize {
+                    closuresControlPanel
+                }
                 nowPanel
 
                 scheduledSectionHeader(count: scheduledCount)
@@ -131,6 +137,9 @@ struct HomeView: View {
     private var loadingOverview: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
+                if dynamicTypeSize.isAccessibilitySize {
+                    closuresControlPanel
+                }
                 VStack(alignment: .leading, spacing: 16) {
                     HStack(spacing: 12) {
                         RoundedRectangle(cornerRadius: 13, style: .continuous)
@@ -239,34 +248,16 @@ struct HomeView: View {
             ? (needsVerification ? Color.a56Caution : Color.a56Open)
             : Color.a56Block
 
-        return VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(
-                    systemName: needsVerification && activeNow.isEmpty
-                        ? "exclamationmark.triangle.fill"
-                        : (activeNow.isEmpty ? "checkmark" : (hasRoadBlock ? "nosign" : "arrow.trianglehead.branch"))
-                )
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(.a56OnStatus)
-                    .frame(width: 46, height: 46)
-                    .background(accent, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Adesso · \(direction.headingPhrase)")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    Text(nowHeadline(hasRoadBlock: hasRoadBlock, needsVerification: needsVerification))
-                        .font(.title3.weight(.bold))
-                        .tracking(-0.25)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(nowSupportingText(hasRoadBlock: hasRoadBlock, needsVerification: needsVerification))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 0)
-            }
+        return VStack(alignment: .leading, spacing: 18) {
+            A56CurrentStatusHeader(
+                direction: direction,
+                headline: nowHeadline(hasRoadBlock: hasRoadBlock, needsVerification: needsVerification),
+                detail: nowSupportingText(hasRoadBlock: hasRoadBlock, needsVerification: needsVerification),
+                symbol: needsVerification && activeNow.isEmpty
+                    ? "exclamationmark.triangle.fill"
+                    : (activeNow.isEmpty ? "checkmark.circle.fill" : (hasRoadBlock ? "nosign" : "arrow.trianglehead.branch")),
+                accent: accent
+            )
 
             A56SchematicView(
                 closures: activeNow,
@@ -339,7 +330,10 @@ struct HomeView: View {
 
             // The message above asks the user to retry, so offer the button
             // here and not only in the toolbar.
-            HStack(spacing: 14) {
+            let actionsLayout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14))
+                : AnyLayout(HStackLayout(spacing: 14))
+            actionsLayout {
                 Button {
                     guard !viewModel.isLoading else { return }
                     Task { await viewModel.load() }
@@ -380,9 +374,7 @@ struct HomeView: View {
 
             closureRows(closures, active: false, scheduledDay: day.date)
         }
-        .a56Surface(
-            accent: closures.isEmpty ? nil : .a56Block
-        )
+        .a56Surface()
     }
 
     private func scheduledDayHeader(
@@ -406,7 +398,8 @@ struct HomeView: View {
     private func dayHeading(_ day: ClosuresViewModel.DirectionDay) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(day.label)
-                .font(.headline)
+                .font(.title3.weight(.semibold))
+                .accessibilityAddTraits(.isHeader)
             Text(ClosureFormat.dayDateLabel(day.date))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -427,12 +420,13 @@ struct HomeView: View {
             }
         }
         .padding(.horizontal, 4)
-        .padding(.top, 2)
+        .padding(.top, 8)
     }
 
     private var scheduledSectionTitle: some View {
-        Label("Programmate", systemImage: "calendar")
+        Text("Programmate")
             .font(.title2.weight(.bold))
+            .accessibilityAddTraits(.isHeader)
             .tracking(-0.35)
     }
 
@@ -591,9 +585,11 @@ struct HomeView: View {
             HStack(spacing: 11) {
                 Image(systemName: group.kind.systemImage)
                     .font(.subheadline.weight(.bold))
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .foregroundStyle(.a56OnStatus)
                     .frame(width: 30, height: 30)
                     .background(Color.a56Block, in: RoundedRectangle(cornerRadius: 9))
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(rampCategoryTitle(kind: group.kind, count: impactCount))
@@ -637,9 +633,11 @@ struct HomeView: View {
             HStack(spacing: 10) {
                 Image(systemName: kind.systemImage)
                     .font(.caption.weight(.bold))
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .foregroundStyle(.a56Block)
                     .frame(width: 26, height: 26)
                     .background(Color.a56Block.opacity(0.12), in: Circle())
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(A56Line.interchangeLabel(for: closure.rampExitNumber))
@@ -664,6 +662,7 @@ struct HomeView: View {
                     .foregroundStyle(.tertiary)
             }
             .padding(.vertical, 9)
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -682,9 +681,11 @@ struct HomeView: View {
                         HStack(spacing: 10) {
                             Image(systemName: "road.lanes")
                                 .font(.caption.weight(.bold))
+                                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                                 .foregroundStyle(.a56Block)
                                 .frame(width: 26, height: 26)
                                 .background(Color.a56Block.opacity(0.12), in: Circle())
+                                .accessibilityHidden(true)
 
                             Text(A56Line.interchangeLabel(for: exit.number))
                                 .font(.subheadline.weight(.semibold))
@@ -697,11 +698,12 @@ struct HomeView: View {
                                 .font(.caption2.weight(.bold))
                                 .foregroundStyle(.tertiary)
                         }
+                        .padding(.vertical, 9)
+                        .frame(minHeight: 44)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .padding(.leading, 8)
-                    .padding(.vertical, 9)
 
                     if index < exits.count - 1 {
                         Divider()
@@ -713,9 +715,11 @@ struct HomeView: View {
             HStack(spacing: 11) {
                 Image(systemName: closureIcon(closure))
                     .font(.subheadline.weight(.bold))
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .foregroundStyle(.a56OnStatus)
                     .frame(width: 30, height: 30)
                     .background(Color.a56Block, in: RoundedRectangle(cornerRadius: 9))
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(closure.headline)
@@ -799,6 +803,48 @@ struct HomeView: View {
     private var freshnessLabel: String {
         if viewModel.isLoading { return "Aggiornamento in corso…" }
         return viewModel.freshness?.updateLabel(reference: viewModel.now) ?? "Controllo in corso…"
+    }
+}
+
+/// The current situation has its own full-width headline; the road identifier
+/// is a small sign, leaving the status and its caveats room to breathe.
+private struct A56CurrentStatusHeader: View {
+    let direction: Direction
+    let headline: String
+    let detail: String
+    let symbol: String
+    let accent: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Text("A56")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.a56OnStatus)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.a56Open, in: RoundedRectangle(cornerRadius: 5))
+                    .accessibilityHidden(true)
+                Text("Adesso · \(direction.headingPhrase)")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Color.secondary)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: symbol)
+                    .font(.headline)
+                    .foregroundStyle(accent)
+                    .accessibilityHidden(true)
+                Text(headline)
+                    .font(.title3.weight(.bold))
+                    .tracking(-0.3)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            Text(detail)
+                .font(.subheadline)
+                .foregroundStyle(Color.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

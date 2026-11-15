@@ -84,6 +84,7 @@ struct ClosureDetailView: View {
     private var heroIcon: some View {
         Image(systemName: closure.kind == .roadBlocked ? "nosign" : closureIcon)
             .font(.title3.weight(.bold))
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             .foregroundStyle(.a56OnStatus)
             .frame(width: 44, height: 44)
             .background(accent, in: RoundedRectangle(cornerRadius: 13))
@@ -94,6 +95,7 @@ struct ClosureDetailView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(closure.headline)
                 .font(.title2.weight(.bold))
+                .accessibilityAddTraits(.isHeader)
                 .tracking(-0.35)
 
             Group {
@@ -183,14 +185,22 @@ struct ClosureDetailView: View {
 
             VStack(spacing: 0) {
                 if closure.kind == .roadBlocked {
-                    ForEach(Array(roadBoundaryExits.enumerated()), id: \.element.id) { index, exit in
-                        locationRow(
-                            icon: "road.lanes",
-                            title: A56Line.interchangeLabel(for: exit.number),
-                            subtitle: roadExitRole(at: index)
-                        )
-                        if index < roadBoundaryExits.count - 1 {
-                            rowDivider
+                    if let reported = reportedRoadSegment {
+                        locationRow(icon: "road.lanes", title: reported.startLabel,
+                                    subtitle: "Inizio del tratto indicato dal gestore")
+                        rowDivider
+                        locationRow(icon: "road.lanes", title: reported.endLabel,
+                                    subtitle: "Fine del tratto indicato dal gestore")
+                    } else {
+                        ForEach(Array(roadBoundaryExits.enumerated()), id: \.element.id) { index, exit in
+                            locationRow(
+                                icon: "road.lanes",
+                                title: A56Line.interchangeLabel(for: exit.number),
+                                subtitle: roadExitRole(at: index)
+                            )
+                            if index < roadBoundaryExits.count - 1 {
+                                rowDivider
+                            }
                         }
                     }
                 } else {
@@ -259,9 +269,11 @@ struct ClosureDetailView: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.caption.weight(.bold))
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .foregroundStyle(.a56Open)
                 .frame(width: 28, height: 28)
                 .background(Color.a56Open.opacity(0.12), in: Circle())
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -291,8 +303,12 @@ struct ClosureDetailView: View {
                 .font(.subheadline)
             }
 
-            Link("Consulta gli avvisi del gestore", destination: AppLinks.plannedNotices)
-                .font(.subheadline.weight(.semibold))
+            Link(destination: AppLinks.plannedNotices) {
+                Text("Consulta gli avvisi del gestore")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
         }
         .detailSurface()
     }
@@ -300,6 +316,7 @@ struct ClosureDetailView: View {
     private func sectionTitle(_ title: String, systemImage: String) -> some View {
         Label(title, systemImage: systemImage)
             .font(.headline)
+            .accessibilityAddTraits(.isHeader)
             .foregroundStyle(.primary)
     }
 
@@ -397,6 +414,9 @@ struct ClosureDetailView: View {
     private var guidanceText: String {
         switch closure.kind {
         case .roadBlocked:
+            if let reported = reportedRoadSegment {
+                return "L’avviso segnala la chiusura del tratto tra \(reported.startLabel) e \(reported.endLabel), compreso il collegamento autostradale interessato."
+            }
             return "L’avviso segnala la chiusura del tratto tra \(A56Line.driverLabel(for: closure.fromExit)) e \(A56Line.driverLabel(for: closure.toExit))."
         case .rampsClosed:
             let exitName = A56Line.driverLabel(for: closure.rampExitNumber)
@@ -410,6 +430,10 @@ struct ClosureDetailView: View {
             }
             return "L’avviso segnala: \(exitName), \(action)."
         }
+    }
+
+    private var reportedRoadSegment: A56RouteGeometry.ResolvedReportedSegment? {
+        A56RouteGeometry.resolvedReportedSegment(for: closure, direction: closure.direction)
     }
 
     private var displayedTime: String {

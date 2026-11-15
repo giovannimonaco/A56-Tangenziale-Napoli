@@ -34,27 +34,13 @@ struct A56SchematicView: View {
             }
 
             GeometryReader { geometry in
-                let step = (geometry.size.width - nodeDiameter)
-                    / CGFloat(max(1, orderedExits.count - 1))
-
-                ZStack(alignment: .topLeading) {
-                    ForEach(0..<(orderedExits.count - 1), id: \.self) { index in
-                        Capsule()
-                            .fill(segmentHasIssue(at: index) ? Color.a56Block : openColor)
-                            .frame(width: step + 1, height: lineWidth)
-                            .offset(
-                                x: nodeDiameter / 2 + CGFloat(index) * step,
-                                y: (nodeDiameter - lineWidth) / 2
-                            )
-                    }
-
-                    ForEach(Array(orderedExits.enumerated()), id: \.element.id) { index, exit in
-                        exitNode(exit)
-                            .offset(x: CGFloat(index) * step)
-                    }
+                let minimumWidth = nodeDiameter * CGFloat(orderedExits.count)
+                ScrollView(.horizontal) {
+                    rail(width: max(geometry.size.width, minimumWidth))
+                        .padding(.vertical, 5)
                 }
             }
-            .frame(height: nodeDiameter)
+            .frame(height: nodeDiameter + 10)
 
             Text("\(A56Line.italia90.markerLabel) · \(A56Line.italia90.interchangeLabel)")
                 .font(.caption2.weight(.medium))
@@ -63,6 +49,26 @@ struct A56SchematicView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(accessibilitySummary) \(A56Line.italia90.name), solo ingresso in entrambe le direzioni.")
+    }
+
+    private func rail(width: CGFloat) -> some View {
+        let step = (width - nodeDiameter) / CGFloat(max(1, orderedExits.count - 1))
+        return ZStack(alignment: .topLeading) {
+            ForEach(0..<(orderedExits.count - 1), id: \.self) { index in
+                Capsule()
+                    .fill(segmentHasIssue(at: index) ? Color.a56Block : openColor)
+                    .frame(width: step + 1, height: lineWidth)
+                    .offset(
+                        x: nodeDiameter / 2 + CGFloat(index) * step,
+                        y: (nodeDiameter - lineWidth) / 2
+                    )
+            }
+            ForEach(Array(orderedExits.enumerated()), id: \.element.id) { index, exit in
+                exitNode(exit)
+                    .offset(x: CGFloat(index) * step)
+            }
+        }
+        .frame(width: width, height: nodeDiameter, alignment: .topLeading)
     }
 
     private var endpointLabels: some View {
@@ -87,20 +93,15 @@ struct A56SchematicView: View {
     private func exitNode(_ exit: A56Exit) -> some View {
         let hasIssue = exitHasIssue(exit)
         return Text(exit.markerLabel)
-            .font(.system(size: nodeFontSize, weight: .bold, design: .rounded))
+            .font(.system(size: nodeFontSize, weight: .semibold))
             .minimumScaleFactor(0.6)
-            .foregroundStyle(.a56OnStatus)
+            .foregroundStyle(hasIssue ? Color.a56OnStatus : openColor)
             .frame(width: nodeDiameter, height: nodeDiameter)
-            .background(hasIssue ? Color.a56Block : openColor, in: Circle())
+            .background(hasIssue ? Color.a56Block : Color.a56Surface, in: Circle())
             .overlay {
                 Circle()
-                    .strokeBorder(Color.a56MarkerBorder.opacity(0.9), lineWidth: hasIssue ? 1.5 : 1)
+                    .strokeBorder(hasIssue ? Color.a56Block : openColor, lineWidth: hasIssue ? 2 : 1.25)
             }
-            .shadow(
-                color: (hasIssue ? Color.a56Block : openColor).opacity(0.28),
-                radius: hasIssue ? 4 : 2,
-                y: 1
-            )
     }
 
     private func segmentHasIssue(at index: Int) -> Bool {
@@ -136,14 +137,14 @@ struct A56SchematicView: View {
                 return "Schema A56 da Pozzuoli a Capodichino. Stato non confermato."
             }
             return "Schema A56 da Pozzuoli a Capodichino. "
-                + "\(relevantClosures.count) limitazioni non aggiornate "
+                + "\(relevantClosures.count) \(relevantClosures.count == 1 ? "limitazione non aggiornata" : "limitazioni non aggiornate") "
                 + "\(direction.headingPhrase), da verificare."
         }
         guard !relevantClosures.isEmpty else {
             return "Schema A56 da Pozzuoli a Capodichino. Nessuna chiusura segnalata \(direction.headingPhrase)."
         }
         return "Schema A56 da Pozzuoli a Capodichino. "
-            + "\(relevantClosures.count) limitazioni \(direction.headingPhrase)."
+            + "\(relevantClosures.count) \(relevantClosures.count == 1 ? "limitazione" : "limitazioni") \(direction.headingPhrase)."
     }
 }
 

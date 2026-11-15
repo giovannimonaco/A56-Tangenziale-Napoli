@@ -8,22 +8,28 @@ struct ClosureCardLayout<Content: View>: View {
     let title: String
     let time: String
     @ViewBuilder var content: Content
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             IconChip(systemName: glyph, color: accent)
 
             VStack(alignment: .leading, spacing: 5) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                let headingLayout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 5))
+                    : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 8))
+                headingLayout {
                     Text(title)
                         .font(.headline)
-                        .lineLimit(1)
-                    Spacer(minLength: 4)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !dynamicTypeSize.isAccessibilitySize {
+                        Spacer(minLength: 4)
+                    }
                     Text(time)
                         .font(.footnote.weight(.medium))
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
-                        .fixedSize()
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 content
             }

@@ -8,6 +8,7 @@ struct SeverityBadge: View {
         Label {
             if showsLabel {
                 Text(severity.displayName)
+                    .foregroundStyle(Color.primary)
             }
         } icon: {
             Image(systemName: severity.systemImage)

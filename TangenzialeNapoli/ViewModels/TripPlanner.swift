@@ -33,23 +33,27 @@ final class TripPlanner {
             return traversals
         }
 
+        private var coordinates: [CLLocationCoordinate2D] {
+            Array(UnsafeBufferPointer(start: route.polyline.points(), count: route.polyline.pointCount)).map(\.coordinate)
+        }
+
         func impacts(closures: [RoadClosure], departure: Date) -> [A56TripMatcher.Impact] {
-            guard case .withA56(let traversals) = usage else { return [] }
             return A56TripMatcher.impacts(
-                on: traversals,
+                on: a56Traversals,
                 closures: closures,
                 departure: departure,
-                duration: route.expectedTravelTime
+                duration: route.expectedTravelTime,
+                coordinates: coordinates
             )
         }
 
         func nextImpactAfterTrip(closures: [RoadClosure], departure: Date) -> A56TripMatcher.Impact? {
-            guard case .withA56(let traversals) = usage else { return nil }
             return A56TripMatcher.nextImpactAfterTrip(
-                on: traversals,
+                on: a56Traversals,
                 closures: closures,
                 departure: departure,
-                duration: route.expectedTravelTime
+                duration: route.expectedTravelTime,
+                coordinates: coordinates
             )
         }
     }
@@ -132,7 +136,8 @@ final class TripPlanner {
                                 guard step.polyline.pointCount > 0, !step.instructions.isEmpty else { return nil }
                                 return A56TripMatcher.Maneuver(
                                     instruction: step.instructions,
-                                    coordinate: step.polyline.points()[0].coordinate
+                                    coordinate: step.polyline.points()[0].coordinate,
+                                    endCoordinate: step.polyline.points()[step.polyline.pointCount - 1].coordinate
                                 )
                             }
                         )

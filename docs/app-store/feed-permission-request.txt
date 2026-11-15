@@ -1,0 +1,33 @@
+A: info@tangenzialedinapoli.it
+Cc: info@autostrade.it
+Oggetto: A56 Napoli - richiesta condizioni di riuso dati di viabilita per app iPhone
+
+Buongiorno,
+
+sono Giovanni Monaco e sto sviluppando A56 Napoli, un'app iPhone indipendente per consultare le chiusure della Tangenziale prima di partire, che vorrei distribuire su App Store.
+
+Vi chiedo di inoltrare questa richiesta all'ufficio competente per l'accesso e il riutilizzo dei dati di viabilità.
+
+La versione in sviluppo consulta questi file pubblicamente accessibili:
+https://viabilita.autostrade.it/json/previsioni.json
+https://viabilita.autostrade.it/json/eventi.json
+
+Scarica i file e seleziona gli eventi A56, mostrando informazioni strutturate su tratti, direzioni, rampe e orari, con motivo breve e alternative quando presenti. Non riproduce integralmente i testi degli avvisi e non utilizza i vostri loghi. L'app indica la fonte, rimanda ai vostri canali e dichiara chiaramente di essere indipendente e non ufficiale.
+
+Sono previsti aggiornamenti diretti dai dispositivi, anche tramite widget senza aprire l'app, e una copia locale per consultazione offline e archivio. Attualmente l'app aggiorna in primo piano normalmente ogni cinque minuti, con tentativi dopo due minuti in caso di dati da verificare, oltre ad avvio e aggiornamenti manuali. I widget richiedono aggiornamenti ogni 30-32 minuti circa, con tempi effettivi stabiliti da iOS. Ogni aggiornamento consulta entrambi i file. L'archivio dell'app conserva gli avvisi normalmente per dieci giorni dalla loro fine, con scelta dell'utente da uno a sessanta giorni; il widget ha una copia locale separata con durata predefinita. Posso adeguare frequenza e conservazione alle vostre condizioni.
+
+Potreste confermare per iscritto se questo utilizzo è consentito, indicando le condizioni applicabili e il soggetto competente a concederlo? Vorrei chiarire in particolare uso in app e widget, trasformazione dei dati, conservazione, attribuzione, frequenza e volumi consentiti, eventuali condizioni economiche, territori e durata. Prima di concordare l'ambito finale comunicherò anche prezzo e paesi di distribuzione.
+
+Se questi endpoint non sono destinati a tale utilizzo, vi sarei grato per l'indicazione di un'API o di un dataset ufficiale autorizzato che copra chiusure programmate, attive e di rampe della A56, eventualmente tramite NAP/CCISS. Mi sarebbe utile un riferimento documentabile alle condizioni di utilizzo anche per eventuali richieste di App Review.
+
+Posso inviarvi schermate e una breve dimostrazione dell'app.
+
+Grazie per l'attenzione,
+Giovanni Monaco
+mon.giovanni@gmail.com
+
+---
+Bozza non inviata. Destinatari verificati il 15 novembre 2026 sulle pagine ufficiali:
+https://www.tangenzialedinapoli.it/contatti-e-customer-care
+https://www.autostrade.it/it/contatti/scrivici/richiedi-informazioni
+Sono recapiti generali, non uffici licenze identificati: si chiede inoltro al referente competente.

@@ -136,7 +136,8 @@ nonisolated enum AutostradeRealtimeClosureMapper {
             sourceText: event.tDesIt ?? "",
             evidence: .realtime,
             reportedWindow: ends.min().flatMap { $0 < end ? .init(start: start, end: $0) : nil },
-            hasUnpublishedEnd: ends.isEmpty ? true : nil
+            hasUnpublishedEnd: ends.isEmpty ? true : nil,
+            reportedSegment: isFullClosure ? AutostradeClosureMapper.terminalReportedSegment(event) : nil
         )
     }
 

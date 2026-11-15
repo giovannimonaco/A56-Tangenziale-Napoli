@@ -1,0 +1,36 @@
+{
+  "assets": {
+    "it/iPhone-6.9-1-fixture-map.png": {
+      "id": "efc00019-43d2-8607-803d-41b0bfb8a8dc",
+      "sha256": "56efd917e4fa5af655694bc9124fd0c742034740a098f0793fd8b1bfa3b22ef6"
+    },
+    "it/iPhone-6.9-3-fixture-dettaglio-rampa.png": {
+      "id": "7ec00019-43d2-8607-801e-e450e7188ad8",
+      "sha256": "ca24e5b5bbcf1abbf2539b915fc3bd88068dc75a4b76b56cf71383f45953e7d3"
+    },
+    "it/iPhone-6.9-2-fixture-programmate.png": {
+      "id": "6a800019-43d2-8607-803c-30417209f496",
+      "sha256": "36b0c4e3a03eb6c6b841d33f3878ceff5208c85b132c01251dfbefa45cdfa2fa"
+    },
+    "it/iPhone-6.9-4-fixture-avvisi-mapkit-percorso.png": {
+      "id": "07800019-43d2-8607-8021-24886ef404c7",
+      "sha256": "e6305fd62c8aeb7806949d50756ee88aad10d7f1a551283b7970cecbf07ee511"
+    },
+    "it/iPhone-6.3-2-fixture-programmate.png": {
+      "id": "54c00019-43d2-8607-8017-872acbf62a63",
+      "sha256": "fe303248993cb23b5dcb64b991155bbd778e897433eb283f5a88fda1f0d9d690"
+    },
+    "it/iPhone-6.3-1-fixture-map.png": {
+      "id": "dac00019-43d2-8607-801f-04e0b9d6455e",
+      "sha256": "9a511e4c6b23f10626821b5daf254f21841792872ffcb2e5b00ae8a0582135e8"
+    },
+    "it/iPhone-6.3-3-fixture-dettaglio-rampa.png": {
+      "id": "b6800019-43d2-8607-8020-5adfd2a29f1b",
+      "sha256": "4b30c57dacb6be2262619e96b5518640da0a20cb63dfd251e59442a35bf61683"
+    },
+    "it/iPhone-6.3-4-fixture-avvisi-mapkit-percorso.png": {
+      "id": "f6800019-43d2-8607-802c-82deaf1bf8a7",
+      "sha256": "06b842f978d44107d87c5ccee0a5fba04c7534b6d0dfd10a8a34233b5bc1b4d7"
+    }
+  }
+}

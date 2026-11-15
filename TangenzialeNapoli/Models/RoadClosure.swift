@@ -36,6 +36,20 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
     let hasUnpublishedEnd: Bool?
     /// The schedule end before an active notice extends the window.
     let scheduledEnd: Date?
+    /// Physical endpoints published for a terminal segment whose text aliases
+    /// collapse on the schematic. Optional for archives written before this field.
+    let reportedSegment: ReportedSegment?
+
+    nonisolated struct ReportedSegment: Codable, Hashable, Sendable {
+        nonisolated struct Point: Codable, Hashable, Sendable {
+            let latitude: Double
+            let longitude: Double
+        }
+        let first: Point
+        let second: Point
+        let firstLabel: String
+        let secondLabel: String
+    }
 
     nonisolated struct ReportedWindow: Codable, Hashable, Sendable {
         let start: Date
@@ -92,7 +106,8 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
         evidence: ClosureEvidence? = nil,
         reportedWindow: ReportedWindow? = nil,
         hasUnpublishedEnd: Bool? = nil,
-        scheduledEnd: Date? = nil
+        scheduledEnd: Date? = nil,
+        reportedSegment: ReportedSegment? = nil
     ) {
         self.id = id
         self.start = start
@@ -100,6 +115,7 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
         self.reportedWindow = reportedWindow
         self.hasUnpublishedEnd = hasUnpublishedEnd
         self.scheduledEnd = scheduledEnd
+        self.reportedSegment = reportedSegment
         self.direction = direction
         self.affectsBothDirections = affectsBothDirections
         self.fromExit = fromExit
@@ -245,7 +261,8 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
             evidence: .realtimeConfirmed,
             reportedWindow: reported,
             hasUnpublishedEnd: unpublished ? true : nil,
-            scheduledEnd: plannedEnd
+            scheduledEnd: plannedEnd,
+            reportedSegment: reportedSegment ?? live.reportedSegment
         )
     }
 
@@ -276,7 +293,8 @@ nonisolated struct RoadClosure: Identifiable, Codable, Hashable, Sendable {
             evidence: evidence,
             reportedWindow: reportedWindow,
             hasUnpublishedEnd: hasUnpublishedEnd,
-            scheduledEnd: scheduledEnd
+            scheduledEnd: scheduledEnd,
+            reportedSegment: reportedSegment
         )
     }
 }

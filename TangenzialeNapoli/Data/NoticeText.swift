@@ -116,17 +116,24 @@ nonisolated enum NoticeText {
     )
 
     static func segmentEndpoints(in text: String) -> (Int, Int)? {
+        guard let (firstName, secondName) = segmentLocations(in: text),
+              let first = A56Line.resolveExit(named: firstName),
+              let second = A56Line.resolveExit(named: secondName) else { return nil }
+        return (first, second)
+    }
+
+    /// Keep the two published labels as well as their schematic aliases: two
+    /// distinct official points can share a coarse terminal alias.
+    static func segmentLocations(in text: String) -> (String, String)? {
         guard !text.isEmpty, let segmentExpression else { return nil }
 
         let nsText = text as NSString
         guard let match = segmentExpression.firstMatch(
             in: text,
             range: NSRange(location: 0, length: nsText.length)
-        ), match.numberOfRanges >= 3,
-              let first = A56Line.resolveExit(named: nsText.substring(with: match.range(at: 1))),
-              let second = A56Line.resolveExit(named: nsText.substring(with: match.range(at: 2)))
+        ), match.numberOfRanges >= 3
         else { return nil }
-        return (first, second)
+        return (nsText.substring(with: match.range(at: 1)), nsText.substring(with: match.range(at: 2)))
     }
 
     // MARK: - Times in the notice

@@ -142,6 +142,10 @@ nonisolated struct LiveClosureProvider: ClosureProvider {
                 issues.append("\(closure.id): posizione fuori dalla linea A56.")
             }
             if closure.kind == .roadBlocked {
+                if closure.reportedSegment != nil,
+                   A56RouteGeometry.resolvedReportedSegment(for: closure, direction: closure.direction) == nil {
+                    issues.append("\(closure.id): estremi fisici non verificabili sulla strada del gestore.")
+                }
                 let orderedCorrectly = closure.direction.goesUpTheLine
                     ? closure.fromExit <= closure.toExit
                     : closure.fromExit >= closure.toExit

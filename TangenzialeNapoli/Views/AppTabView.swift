@@ -129,6 +129,12 @@ struct AppTabView: View {
         .onChange(of: selectedTab) { _, tab in
             UserDefaults.standard.set(tab.rawValue, forKey: Self.lastTabKey)
         }
+        .onOpenURL { url in
+            guard url.scheme == "a56napoli", url.host == "closures" else { return }
+            isInfoPresented = false
+            selectedTab = .closures
+            Task { await refreshOnTimer() }
+        }
     }
 
     private func refreshOnTimer() async {

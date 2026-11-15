@@ -207,7 +207,8 @@ actor ClosureArchive {
             evidence: fresh.evidence,
             reportedWindow: fresh.reportedWindow,
             hasUnpublishedEnd: fresh.hasUnpublishedEnd,
-            scheduledEnd: fresh.scheduledEnd
+            scheduledEnd: fresh.scheduledEnd,
+            reportedSegment: fresh.reportedSegment ?? stored.reportedSegment
         )
     }
 
@@ -240,7 +241,8 @@ actor ClosureArchive {
             evidence: old.evidence,
             reportedWindow: old.reportedWindow,
             hasUnpublishedEnd: old.hasUnpublishedEnd,
-            scheduledEnd: old.scheduledEnd
+            scheduledEnd: old.scheduledEnd,
+            reportedSegment: old.reportedSegment
         )
     }
 

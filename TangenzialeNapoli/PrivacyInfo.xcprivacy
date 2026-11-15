@@ -4,6 +4,8 @@
 <dict>
     <key>NSPrivacyTracking</key>
     <false/>
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
     <key>NSPrivacyCollectedDataTypes</key>
     <array/>
     <key>NSPrivacyAccessedAPITypes</key>
@@ -13,6 +15,7 @@
             <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
             <key>NSPrivacyAccessedAPITypeReasons</key>
             <array>
+                <!-- App-local preferences and saved destinations; no shared App Group. -->
                 <string>CA92.1</string>
             </array>
         </dict>

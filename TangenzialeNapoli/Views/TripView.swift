@@ -10,6 +10,7 @@ struct TripView: View {
     @AppStorage("tripFavoriteDestinations") private var favoriteData = Data()
     @State private var editing: Endpoint?
     @State private var shouldCompareAfterLocation = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private struct Trip: Hashable {
         let origin: TripPlanner.Place
@@ -122,12 +123,15 @@ struct TripView: View {
 
     private func favoritesHeader(hasFavorites: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack {
+            let headerLayout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+                : AnyLayout(HStackLayout())
+            headerLayout {
                 Label("Preferiti", systemImage: "star")
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .accessibilityAddTraits(.isHeader)
-                Spacer()
+                if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                 Button {
                     editing = .favorite
                 } label: {
@@ -191,14 +195,7 @@ struct TripView: View {
 
     private var tripForm: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Dove vai?")
-                    .font(.largeTitle.bold())
-                    .accessibilityAddTraits(.isHeader)
-                Text("Confronta il viaggio con e senza Tangenziale.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+            TripIntroduction()
 
             VStack(alignment: .leading, spacing: 0) {
                 endpointButton(.origin, place: origin, icon: "circle.circle",
@@ -217,13 +214,21 @@ struct TripView: View {
                 endpointButton(.destination, place: destination, icon: "mappin.circle.fill",
                                placeholder: "Scegli destinazione")
             }
-            .a56Surface()
+            .a56Surface(accent: .a56Open)
 
-            NavigationLink(value: trip) {
-                Text("Controlla percorso")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 26)
+            Button {
+                if let trip { path.append(trip) }
+            } label: {
+                HStack {
+                    Text("Controlla percorso")
+                    Spacer(minLength: 8)
+                    Image(systemName: "arrow.right")
+                        .accessibilityHidden(true)
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 26)
             }
+            .accessibilityLabel("Controlla percorso")
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .disabled(trip == nil || location.isLocating)
@@ -245,6 +250,7 @@ struct TripView: View {
             Label("Scambia partenza e destinazione", systemImage: "arrow.up.arrow.down")
                 .labelStyle(.iconOnly)
                 .font(.body.weight(.semibold))
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .frame(width: 44, height: 44)
                 .background(Color.a56Open.opacity(0.1), in: .circle)
                 .contentShape(Rectangle())
@@ -278,6 +284,7 @@ struct TripView: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.title3)
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .foregroundStyle(Color.a56Open)
                     .frame(width: 24)
                     .accessibilityHidden(true)
@@ -317,12 +324,29 @@ struct TripView: View {
     }
 }
 
+private struct TripIntroduction: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Dove vai?")
+                .font(.largeTitle.bold())
+                .tracking(-0.8)
+                .accessibilityAddTraits(.isHeader)
+            Text("Confronta il viaggio con e senza Tangenziale.")
+                .font(.subheadline)
+                .foregroundStyle(Color.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
 private struct TripComparisonView: View {
     let closures: ClosuresViewModel
     @State private var planner: TripPlanner
     @State private var refreshCount = 0
     @State private var selectedRoute: RouteKind?
     @State private var camera: MapCameraPosition = .automatic
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(origin: TripPlanner.Place, destination: TripPlanner.Place, closures: ClosuresViewModel) {
         self.closures = closures
@@ -405,11 +429,15 @@ private struct TripComparisonView: View {
 
     private func comparison(_ result: TripPlanner.Result) -> some View {
         let withA56 = result.preferredA56(closures: closures.closures, departure: closures.now)
-        let impacts = withA56?.impacts(closures: closures.closures, departure: closures.now) ?? []
-        let status = statusFor(impacts: impacts, withA56: withA56, result: result)
-        let nextImpact = withA56?.nextImpactAfterTrip(closures: closures.closures, departure: closures.now)
+        let withoutImpacts = result.withoutA56?.impacts(closures: closures.closures, departure: closures.now) ?? []
+        let primary = withA56 ?? result.withoutA56 ?? result.uncertain
+        let impacts = primary?.impacts(closures: closures.closures, departure: closures.now) ?? []
+        let status = statusFor(impacts: impacts, withoutImpacts: withoutImpacts, withA56: withA56, result: result)
+        let nextImpact = primary?.nextImpactAfterTrip(closures: closures.closures, departure: closures.now)
         let route = selectedRoute ?? status.recommended
-        let blocked = impacts.contains(where: \.blocksRoute)
+        let blocked = withA56 != nil && impacts.contains(where: \.blocksRoute)
+        let withoutBlocked = withoutImpacts.contains(where: \.blocksRoute)
+        let uncertainBlocked = withA56 == nil && result.withoutA56 == nil && impacts.contains(where: \.blocksRoute)
         return VStack(alignment: .leading, spacing: 18) {
             statusCard(status, impacts: impacts)
                 .a56Surface(accent: status.tone.surfaceAccent)
@@ -432,15 +460,15 @@ private struct TripComparisonView: View {
                     }
                     Divider()
                     routeRow(.withoutA56, option: result.withoutA56, selected: route,
-                             empty: missingRoute(result, withA56: false))
+                             empty: missingRoute(result, withA56: false), blocked: withoutBlocked)
                     if withA56 == nil, result.withoutA56 == nil, let uncertain = result.uncertain {
                         Divider()
-                        routeRow(.uncertain, option: uncertain, selected: route, empty: "")
+                        routeRow(.uncertain, option: uncertain, selected: route, empty: "", blocked: uncertainBlocked)
                     }
                 }
                 routeMap(
                     withA56: withA56, withoutA56: result.withoutA56, uncertain: result.uncertain,
-                    selection: route, blocked: blocked
+                    selection: route, blocked: blocked, withoutBlocked: withoutBlocked, uncertainBlocked: uncertainBlocked
                 )
                 Text("Tempi e distanze stimati da Mappe di Apple.")
                     .font(.caption)
@@ -491,12 +519,26 @@ private struct TripComparisonView: View {
     }
 
     private func statusFor(
-        impacts: [A56TripMatcher.Impact], withA56: TripPlanner.Option?, result: TripPlanner.Result
+        impacts: [A56TripMatcher.Impact], withoutImpacts: [A56TripMatcher.Impact],
+        withA56: TripPlanner.Option?, result: TripPlanner.Result
     ) -> Status {
-        let alternative: RouteKind? = result.withoutA56 != nil ? .withoutA56 : nil
+        let needsVerification = closures.dataNeedsVerification
+        let alternative: RouteKind? = result.withoutA56 != nil && withoutImpacts.isEmpty && !needsVerification
+            ? .withoutA56 : nil
         let warning = "exclamationmark.triangle"
         if withA56 == nil {
+            if !impacts.isEmpty {
+                let blocked = impacts.contains(where: \.blocksRoute)
+                return Status(title: blocked ? "Chiusura sul collegamento" : "Collegamento da verificare",
+                              detail: "Il tragitto interessa un collegamento autostradale segnalato dagli avvisi, anche se non percorre la A56.",
+                              icon: warning, tone: blocked ? .blocked : .caution, recommended: nil)
+            }
             if result.withoutA56 != nil {
+                if needsVerification {
+                    return Status(title: "Percorso da verificare",
+                                  detail: closures.freshness?.limitationDetail ?? "Avvisi del gestore in attesa di aggiornamento.",
+                                  icon: warning, tone: .caution, recommended: nil)
+                }
                 return Status(title: "Percorso senza Tangenziale",
                               detail: "Tra i percorsi calcolati, nessuno è stato riconosciuto sulla A56.",
                               icon: "arrow.turn.up.right", tone: .neutral, recommended: .withoutA56)
@@ -505,7 +547,6 @@ private struct TripComparisonView: View {
                           detail: "Non è stato possibile stabilire se il percorso usa la A56.",
                           icon: warning, tone: .caution, recommended: .uncertain)
         }
-        let needsVerification = closures.dataNeedsVerification
         let blocks = impacts.filter(\.blocksRoute)
         if !blocks.isEmpty {
             let startsDuringTrip = blocks.allSatisfy { $0.closure.start > closures.now }
@@ -588,7 +629,7 @@ private struct TripComparisonView: View {
         let minutesUntilStart = max(1, Int((secondsUntilStart / 60).rounded(.up)))
         let possibleImpact = !impact.blocksRoute
         let title = if imminent {
-            possibleImpact ? "Possibile limitazione imminente" : "Chiusura imminente sulla Tangenziale"
+            possibleImpact ? "Possibile limitazione imminente" : "Chiusura imminente sul percorso"
         } else {
             possibleImpact ? "Prossima possibile limitazione" : "Prossima chiusura programmata"
         }
@@ -611,9 +652,16 @@ private struct TripComparisonView: View {
 
     private func impactRow(_ impact: A56TripMatcher.Impact, showDate: Bool, color: Color) -> some View {
         let closure = impact.closure
-        let place = closure.kind == .roadBlocked
-            ? "\(A56Line.driverLabel(for: closure.fromExit)) → \(A56Line.driverLabel(for: closure.toExit))"
-            : "\(impact.ramp?.shortLabel ?? closure.headline) · \(A56Line.driverLabel(for: closure.rampExitNumber))"
+        let place: String
+        if closure.kind == .roadBlocked {
+            if let reported = A56RouteGeometry.resolvedReportedSegment(for: closure, direction: closure.direction) {
+                place = "\(reported.startLabel) → \(reported.endLabel)"
+            } else {
+                place = "\(A56Line.driverLabel(for: closure.fromExit)) → \(A56Line.driverLabel(for: closure.toExit))"
+            }
+        } else {
+            place = "\(impact.ramp?.shortLabel ?? closure.headline) · \(A56Line.driverLabel(for: closure.rampExitNumber))"
+        }
         let direction = closure.affectsBothDirections ? "Entrambe le direzioni" : closure.direction.towardLabel
         let time = ClosureFormat.timeRange(closure, includesTimingNote: false)
         let schedule = showDate ? "\(ClosureFormat.dayLabel(closure.start)) · \(time)" : time
@@ -630,8 +678,9 @@ private struct TripComparisonView: View {
                 }
             }
             .foregroundStyle(color)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
         }
     }
 
@@ -646,7 +695,10 @@ private struct TripComparisonView: View {
                 Button {
                     selectedRoute = kind
                 } label: {
-                    HStack(spacing: 10) {
+                    let routeLayout = dynamicTypeSize.isAccessibilitySize
+                        ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
+                        : AnyLayout(HStackLayout(spacing: 10))
+                    routeLayout {
                         Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
                             .foregroundStyle(color)
                             .accessibilityHidden(true)
@@ -660,8 +712,8 @@ private struct TripComparisonView: View {
                                     .foregroundStyle(color)
                             }
                         }
-                        Spacer(minLength: 0)
-                        VStack(alignment: .trailing, spacing: 2) {
+                        if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                        VStack(alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing, spacing: 2) {
                             Text(routeDuration(route))
                                 .font(.headline.monospacedDigit())
                                 .foregroundStyle(.primary)
@@ -713,6 +765,7 @@ private struct TripComparisonView: View {
         case .interchange(let junction), .signedInterchange(let junction):
             name = junction.isEntranceOnly ? junction.name : junction.shortLabel
         case .onCarriageway: name = entering ? "Partenza già sulla A56" : "Arrivo sulla A56"
+        case .continuation(let boundary): name = boundary.label
         case .unidentified: name = "Svincolo da verificare"
         }
         return HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -733,7 +786,7 @@ private struct TripComparisonView: View {
 
     private func routeMap(
         withA56: TripPlanner.Option?, withoutA56: TripPlanner.Option?, uncertain: TripPlanner.Option?,
-        selection: RouteKind?, blocked: Bool
+        selection: RouteKind?, blocked: Bool, withoutBlocked: Bool, uncertainBlocked: Bool
     ) -> some View {
         let display: [(RouteKind, TripPlanner.Option)] = [
             withA56.map { (.withA56, $0) },
@@ -742,7 +795,9 @@ private struct TripComparisonView: View {
         ].compactMap { $0 }
         return Map(position: $camera, interactionModes: [.pan, .zoom]) {
             ForEach(display, id: \.0) { kind, option in
-                let color = kind == .withA56 && blocked ? Color.a56Block : kind.color
+                let hasClosure = (kind == .withA56 && blocked) || (kind == .withoutA56 && withoutBlocked)
+                    || (kind == .uncertain && uncertainBlocked)
+                let color = hasClosure ? Color.a56Block : kind.color
                 MapPolyline(option.route.polyline)
                     .stroke(color.opacity(selection == kind ? 1 : 0.72),
                             style: StrokeStyle(lineWidth: selection == kind ? 6 : 4, lineCap: .round,
@@ -827,9 +882,9 @@ private struct TripPlaceSearch: View {
 
     private func placeLabel(_ title: String, subtitle: String?) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).foregroundStyle(.primary)
+            Text(title).foregroundStyle(Color.primary)
             if let subtitle, !subtitle.isEmpty {
-                Text(subtitle).font(.footnote).foregroundStyle(.secondary)
+                Text(subtitle).font(.footnote).foregroundStyle(Color.secondary)
             }
         }
     }

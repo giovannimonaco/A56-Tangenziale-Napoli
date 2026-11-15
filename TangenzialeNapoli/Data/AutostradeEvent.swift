@@ -64,6 +64,10 @@ nonisolated struct AutostradeEvent: Decodable, Sendable {
     let cPntDtxPlsSec: Int?    // stable official point id for `locsec`
     let nKmIni: Double?
     let nKmFin: Double?
+    let nCrdLatIni: Double?
+    let nCrdLonIni: Double?
+    let nCrdLatFin: Double?
+    let nCrdLonFin: Double?
     let dSta: Double?          // overall start, epoch milliseconds
     let dSto: Double?          // overall end, epoch milliseconds
     let dAgg: Double?          // real-time event activation/update, epoch milliseconds

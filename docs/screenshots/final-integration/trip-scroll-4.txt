@@ -1,0 +1,69 @@
+Attributes: Application, 0x10a800f00, pid: 11238, label: 'IntegrationHarness'
+Element subtree:
+ →Application, 0x10a800f00, pid: 11238, label: 'IntegrationHarness'
+    Window (Main), 0x10a8012c0, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10a801400, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10a801e00, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x10a802300, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x10a802800, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x10a803980, {{0.0, 0.0}, {402.0, 874.0}}
+                NavigationBar, 0x10a802580, {{0.0, 62.0}, {402.0, 54.0}}, identifier: 'Controllo percorso'
+                  StaticText, 0x10a800640, {{126.7, 73.7}, {148.3, 20.7}}, label: 'Controllo percorso'
+                  Button, 0x10a803ac0, {{346.0, 66.0}, {36.0, 36.0}}, identifier: 'arrow.clockwise', label: 'Aggiorna confronto'
+                Other, 0x10a801a40, {{0.0, 0.0}, {402.0, 874.0}}
+                  Other, 0x10a801900, {{0.0, 0.0}, {402.0, 874.0}}
+                    Other, 0x10a801b80, {{0.0, 0.0}, {402.0, 874.0}}
+                      Other, 0x10a800500, {{0.0, 0.0}, {402.0, 874.0}}
+                        ScrollView, 0x10a802080, {{0.0, 0.0}, {402.0, 874.0}}
+                          Other, 0x10a8026c0, {{0.0, -67.0}, {402.0, 907.0}}
+                            StaticText, 0x10a8017c0, {{16.0, -55.0}, {86.0, 14.3}}, label: 'Il tuo itinerario'
+                            StaticText, 0x10a802940, {{16.0, -36.7}, {338.3, 26.3}}, label: 'A1 raccordo - punto pubblico sud'
+                            StaticText, 0x10a802bc0, {{17.0, -6.3}, {282.0, 18.0}}, label: 'Da A1 raccordo - punto pubblico nord'
+                            StaticText, 0x10a802d00, {{32.0, 47.7}, {97.7, 14.3}}, label: 'Partenza adesso'
+                            StaticText, 0x10a8030c0, {{33.7, 68.0}, {237.7, 20.3}}, label: 'Chiusura sul collegamento'
+                            StaticText, 0x10a802a80, {{32.0, 94.3}, {338.0, 58.0}}, label: 'Il tragitto interessa un collegamento autostradale segnalato dagli avvisi, anche se non percorre la A56.'
+                            StaticText, 0x10a802e40, {{32.0, 158.3}, {93.7, 14.3}}, label: 'Avvisi: alle 15:32'
+                            Button, 0x10a802f80, {{32.0, 178.7}, {338.0, 44.0}}, label: 'Secondigliano-Aeroporto → Capodichino, Verso Pozzuoli · 15:22 – 16:32'
+                              StaticText, 0x10a803340, {{32.0, 183.0}, {290.7, 18.0}}, label: 'Secondigliano-Aeroporto → Capodichino'
+                              StaticText, 0x10a803200, {{32.0, 204.0}, {169.7, 14.3}}, label: 'Verso Pozzuoli · 15:22 – 16:32'
+                            Link, 0x10a8035c0, {{32.0, 231.7}, {111.7, 15.7}}, label: 'Avvisi del gestore'
+                            StaticText, 0x10a803700, {{32.0, 297.3}, {157.0, 20.3}}, label: 'Itinerari a confronto'
+                            StaticText, 0x10a803480, {{42.0, 337.7}, {117.7, 18.0}}, label: 'Con Tangenziale'
+                            StaticText, 0x10a803840, {{42.0, 358.7}, {262.7, 30.3}}, label: 'Non è stato possibile verificare un percorso di questo tipo.'
+                            StaticText, 0x10a803c00, {{42.0, 409.3}, {132.7, 18.0}}, label: 'Senza Tangenziale'
+                            StaticText, 0x10a803e80, {{42.0, 430.3}, {262.7, 30.3}}, label: 'Non è stato possibile verificare un percorso di questo tipo.'
+                            Button, 0x10a802440, {{32.0, 471.0}, {338.0, 56.7}}, label: 'Percorso da verificare, Chiusura sul tragitto, 1 min, 0,3 km'
+                              StaticText, 0x10a803d40, {{71.7, 481.7}, {156.3, 18.0}}, label: 'Percorso da verificare'
+                              StaticText, 0x10a8021c0, {{315.7, 481.0}, {44.3, 20.3}}, label: '1 min'
+                              Image, 0x10a801f40, {{43.3, 491.0}, {17.0, 17.0}}, identifier: 'circle', label: 'Circle'
+                              StaticText, 0x107a83980, {{71.7, 502.7}, {115.0, 14.3}}, label: 'Chiusura sul tragitto'
+                              StaticText, 0x107a80780, {{321.7, 503.3}, {38.3, 14.3}}, label: '0,3 km'
+                            Other, 0x107a80f00, {{32.0, 537.7}, {338.0, 250.0}}, label: 'Mappa dei percorsi in auto'
+                              Other, 0x107a83840, {{137.0, 724.7}, {31.3, 34.9}}, label: 'Arrivo'
+                              Other, 0x107a835c0, {{233.3, 558.7}, {31.3, 34.9}}, label: 'Partenza'
+                              Other, 0x1136f0000, {{32.0, 537.7}, {338.0, 250.0}}
+                                Map, 0x1136f0140, {{32.0, 537.7}, {338.0, 250.0}}, value: {"camera":{"altitu...
+                                  Other, 0x1136f0280, {{234.2, 578.7}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Partenza, Partenza'
+                                  Other, 0x1136f03c0, {{137.8, 744.7}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Arrivo, Arrivo'
+                                Other, 0x1136f0500, {{32.0, 537.7}, {338.0, 250.0}}, identifier: 'AnnotationContainer'
+                                  Other, 0x1136f0640, {{137.0, 724.7}, {31.3, 34.9}}, label: 'Arrivo'
+                                  Other, 0x1136f0780, {{233.3, 558.7}, {31.3, 34.9}}, label: 'Partenza'
+                              Link, 0x1136f08c0, {{102.2, 766.9}, {28.6, 10.7}}, label: 'Legal'
+                            StaticText, 0x1136f0a00, {{32.0, 797.7}, {249.3, 14.3}}, label: 'Tempi e distanze stimati da Mappe di Apple.'
+                          Other, 0x1136f0b40, {{0.0, 0.0}, {402.0, 874.0}}
+                            Other, 0x1136f0c80, {{0.0, 0.0}, {402.0, 156.0}}
+                          Other, 0x1136f0dc0, {{0.0, 0.0}, {402.0, 874.0}}
+                            Other, 0x1136f0f00, {{0.0, 0.0}, {402.0, 156.0}}
+                          Other, 0x1136f1040, {{369.0, 116.0}, {30.0, 696.0}}, label: 'Vertical scroll bar, 2 pages', value: 100%
+                            Other, 0x1136f1180, {{396.0, 238.3}, {3.0, 570.7}}
+                          Other, 0x1136f12c0, {{369.0, 116.0}, {30.0, 696.0}}, label: 'Vertical scroll bar, 2 pages', value: 100%
+                            Other, 0x1136f1400, {{396.0, 238.3}, {3.0, 570.7}}
+                Toolbar, 0x1136f1540, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar'
+                  Other, 0x1136f1680, {{0.0, 0.0}, {402.0, 874.0}}
+Path to element:
+ →Application, 0x10a800f00, pid: 11238, label: 'IntegrationHarness'
+Query chain:
+ →Find: Target Application 'com.a56.final.integration'
+  Output: {
+    Application, 0x1136f17c0, pid: 11238, label: 'IntegrationHarness'
+  }

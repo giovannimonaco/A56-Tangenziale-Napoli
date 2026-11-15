@@ -26,3 +26,21 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/
 fastlane/test_output/
+
+# Local authentication and signing material (never store credentials in Fastlane)
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.pfx
+*.pem
+*.key
+*.mobileprovision
+fastlane/api_key*.json
+fastlane/asc-key*.json
+
+# Local release archives and result bundles
+*.xcarchive/
+*.xcresult/
+fastlane/logs/

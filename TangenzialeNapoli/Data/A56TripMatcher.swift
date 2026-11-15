@@ -21,12 +21,31 @@ nonisolated enum A56TripMatcher {
         case signedInterchange(A56Exit)
         case interchange(A56Exit)
         case onCarriageway
+        case continuation(Boundary)
         case unidentified
+    }
+
+    enum Boundary: Equatable {
+        case capodichino, domitiana
+
+        var label: String {
+            switch self {
+            case .capodichino: "Collegamento autostrade · Capodichino"
+            case .domitiana: "Collegamento Domitiana · Arco Felice"
+            }
+        }
     }
 
     struct Maneuver {
         let instruction: String
         let coordinate: CLLocationCoordinate2D
+        let endCoordinate: CLLocationCoordinate2D?
+
+        init(instruction: String, coordinate: CLLocationCoordinate2D, endCoordinate: CLLocationCoordinate2D? = nil) {
+            self.instruction = instruction
+            self.coordinate = coordinate
+            self.endCoordinate = endCoordinate
+        }
     }
 
     struct Impact {
@@ -63,7 +82,7 @@ nonisolated enum A56TripMatcher {
             self.start = start
         }
 
-        func project(_ point: MKMapPoint, heading: Segment?) -> Projection? {
+        func project(_ point: MKMapPoint, heading: Segment?, clamped: Bool = true) -> Projection? {
             let squared = dx * dx + dy * dy
             if let heading {
                 let dot = dx * heading.dx + dy * heading.dy
@@ -72,7 +91,8 @@ nonisolated enum A56TripMatcher {
             }
             let offsetX = point.x - from.x
             let offsetY = point.y - from.y
-            let fraction = max(0, min(1, (offsetX * dx + offsetY * dy) / squared))
+            let rawFraction = (offsetX * dx + offsetY * dy) / squared
+            let fraction = clamped ? max(0, min(1, rawFraction)) : rawFraction
             let nearest = MKMapPoint(x: from.x + fraction * dx, y: from.y + fraction * dy)
             let distance = point.distance(to: nearest)
             return Projection(distance: distance, position: start + fraction * length)
@@ -83,6 +103,8 @@ nonisolated enum A56TripMatcher {
         let direction: Direction
         let byLongitude: [Int: [Segment]]
         let exits: [Int: Double]
+        let segments: [Segment]
+        let length: Double
 
         init(direction: Direction) {
             self.direction = direction
@@ -93,6 +115,8 @@ nonisolated enum A56TripMatcher {
                 coordinates.reverse()
             }
             let segments = A56TripMatcher.segments(coordinates.map(MKMapPoint.init))
+            self.segments = segments
+            length = segments.last.map { $0.start + $0.length } ?? 0
             var buckets: [Int: [Segment]] = [:]
             for segment in segments {
                 let first = Self.bucket(segment.from.x)
@@ -223,18 +247,56 @@ nonisolated enum A56TripMatcher {
         }
         finishRun()
 
-        if !runs.isEmpty {
-            return .withA56(runs.map {
+        let mainlineRuns = runs.filter {
+            !isLocalApproachBeforeOppositeMerge($0, runs: runs, route: route, maneuvers: maneuvers)
+        }
+        if !mainlineRuns.isEmpty {
+            return .withA56(mainlineRuns.map {
                 Traversal(
                     direction: $0.first.direction,
                     start: $0.first.position,
                     end: $0.last.position,
-                    entry: $0.first.routePosition <= 55 ? .onCarriageway : access(at: $0.first, entering: true, maneuvers: maneuvers),
-                    exit: length - $0.last.routePosition <= 55 ? .onCarriageway : access(at: $0.last, entering: false, maneuvers: maneuvers)
+                    entry: access(at: $0.first, entering: true, route: route, length: length, maneuvers: maneuvers),
+                    exit: access(at: $0.last, entering: false, route: route, length: length, maneuvers: maneuvers)
                 )
             })
         }
-        return hasShortMatch || mentionsA56 ? .uncertain : .withoutA56
+        return hasShortMatch || !runs.isEmpty || mentionsA56 ? .uncertain : .withoutA56
+    }
+
+    /// Some entrance ramps briefly run alongside the opposite carriageway
+    /// before turning onto the motorway (Via Oreste Salomone is one example).
+    /// Short alignment there is not a separate motorway traversal when the
+    /// step still names a local street and an explicit opposite merge follows.
+    private static func isLocalApproachBeforeOppositeMerge(
+        _ run: Run, runs: [Run], route: [Segment], maneuvers: [Maneuver]
+    ) -> Bool {
+        guard run.last.routePosition - run.first.routePosition <= 400 else { return false }
+        func position(_ coordinate: CLLocationCoordinate2D) -> Double? {
+            route.compactMap { $0.project(MKMapPoint(coordinate), heading: nil) }
+                .min(by: { $0.distance < $1.distance })?.position
+        }
+        for (local, merge) in zip(maneuvers, maneuvers.dropFirst()) {
+            let localText = A56Line.normalize(local.instruction)
+            let mergeText = A56Line.normalize(merge.instruction)
+            guard localText.contains("via "), !isExitInstruction(localText),
+                  isMergeInstruction(mergeText),
+                  let localEnd = local.endCoordinate, let mergeEnd = merge.endCoordinate,
+                  let start = position(local.coordinate), let end = position(localEnd),
+                  let joined = position(mergeEnd),
+                  start <= run.first.routePosition + sampleSpacing,
+                  run.last.routePosition <= end + 55,
+                  joined >= run.last.routePosition - sampleSpacing,
+                  joined - run.last.routePosition <= 400,
+                  runs.contains(where: {
+                      $0.first.direction != run.first.direction
+                          && $0.first.routePosition > run.last.routePosition
+                          && abs($0.first.routePosition - joined) <= 150
+                  })
+            else { continue }
+            return true
+        }
+        return false
     }
 
     /// A brief loss of alignment in the two map sources, for example in a
@@ -275,9 +337,37 @@ nonisolated enum A56TripMatcher {
         }
     }
 
-    private static func access(at match: Match, entering: Bool, maneuvers: [Maneuver]) -> Access {
+    private static func access(
+        at match: Match, entering: Bool, route: [Segment], length: Double, maneuvers: [Maneuver]
+    ) -> Access {
         guard let way = carriageways.first(where: { $0.direction == match.direction }) else {
             return .unidentified
+        }
+        // Reaching a sample near an endpoint does not prove that the endpoint
+        // itself is on the mainline: a ramp can leave it in the last 55 metres.
+        let endpointOffset = entering ? 0.0 : length
+        if abs(endpointOffset - match.routePosition) <= 55,
+           let endpoint = point(at: endpointOffset, in: route),
+           let endpointMatch = bestMatch(endpoint.point, heading: endpoint.segment,
+                                         routePosition: endpointOffset, maxDistance: 12),
+           endpointMatch.direction == match.direction,
+           abs(endpointMatch.position - match.position) <= 65 {
+            return .onCarriageway
+        }
+
+        // The embedded mainline ends at connections to other major roads.
+        // Require directed progress across that edge, not mere proximity to
+        // the last interchange. In particular, Cuma's ramp is not Domitiana.
+        if let edge = entering ? way.segments.first : way.segments.last,
+           (entering ? match.position : way.length - match.position) <= 55 {
+            let outsideOffset = match.routePosition + (entering ? -120 : 120)
+            if let outside = point(at: outsideOffset, in: route),
+               let projection = edge.project(outside.point, heading: outside.segment, clamped: false),
+               projection.distance <= 35,
+               (entering ? projection.position <= -60 : projection.position >= way.length + 60) {
+                let east = entering ? match.direction == .towardPozzuoli : match.direction == .towardCapodichino
+                return .continuation(east ? .capodichino : .domitiana)
+            }
         }
         let candidates = A56Line.exits.compactMap { junction -> (junction: A56Exit, distance: Double)? in
             guard entering || !junction.isEntranceOnly, let position = way.exits[junction.number] else { return nil }
@@ -286,11 +376,38 @@ nonisolated enum A56TripMatcher {
         }.sorted { $0.distance < $1.distance }
 
         var signs = Set<A56Exit>()
-        var numberedSigns = Set<A56Exit>()
+        var numberedSigns: [A56Exit: Double] = [:]
         for maneuver in maneuvers {
-            let distance = match.point.distance(to: MKMapPoint(maneuver.coordinate))
+            let startDistance = match.point.distance(to: MKMapPoint(maneuver.coordinate))
+            let distance = min(startDistance, maneuver.endCoordinate.map {
+                match.point.distance(to: MKMapPoint($0))
+            } ?? .infinity)
             guard distance <= 900 else { continue }
             let text = A56Line.normalize(maneuver.instruction)
+            if entering, isMergeInstruction(text),
+               startDistance <= 900,
+               let projection = ([maneuver.coordinate] + [maneuver.endCoordinate].compactMap { $0 }).flatMap({ coordinate in
+                   way.segments.compactMap { $0.project(MKMapPoint(coordinate), heading: nil) }
+               })
+                .min(by: { $0.distance < $1.distance }), projection.distance <= 250,
+               projection.position <= match.position + 55,
+               match.position - projection.position <= 1000 {
+                // The merge can precede the first reliable heading match by
+                // hundreds of metres (Capodimonte's curved entry). Resolve
+                // ambiguity using that ramp's onset, not the next exit passed.
+                let nearby = candidates.sorted {
+                    abs((way.exits[$0.junction.number] ?? .infinity) - projection.position)
+                        < abs((way.exits[$1.junction.number] ?? .infinity) - projection.position)
+                }
+                if let first = nearby.first,
+                   let position = way.exits[first.junction.number], abs(position - projection.position) <= rampTolerance,
+                   nearby.dropFirst().first.map({
+                       abs((way.exits[$0.junction.number] ?? .infinity) - projection.position)
+                           - abs(position - projection.position) >= 150
+                   }) ?? true {
+                    signs.insert(first.junction)
+                }
+            }
             if entering, distance <= 500 {
                 // Via Oreste Salomone serves the Capodichino Aeroporto
                 // entrance, beside the distinct Secondigliano exit.
@@ -300,7 +417,20 @@ nonisolated enum A56TripMatcher {
             } else if !entering, isExitInstruction(text) {
                 if let number = signedExitNumber(in: text) {
                     if let signed = candidates.first(where: { $0.junction.commercialNumber == number }) {
-                        numberedSigns.insert(signed.junction)
+                        var evidenceDistance = distance
+                        if let end = maneuver.endCoordinate,
+                           let projection = route.compactMap({ $0.project(MKMapPoint(end), heading: nil) })
+                            .min(by: { $0.distance < $1.distance }) {
+                            let remaining = projection.position - match.routePosition
+                            // A later exit instruction can start beside the
+                            // current exit after a loop. Its actual step end
+                            // must be near this transition in route order.
+                            // A departing ramp may remain aligned with the
+                            // mainline briefly after the instruction ends.
+                            guard remaining >= -350, remaining <= 1800 else { continue }
+                            evidenceDistance = abs(remaining)
+                        }
+                        numberedSigns[signed.junction] = min(numberedSigns[signed.junction] ?? .infinity, evidenceDistance)
                     }
                     continue
                 }
@@ -314,8 +444,11 @@ nonisolated enum A56TripMatcher {
             }
         }
 
-        if numberedSigns.count == 1, let signed = numberedSigns.first {
-            return candidates.first?.junction == signed ? .signedInterchange(signed) : .interchange(signed)
+        if let signed = numberedSigns.sorted(by: { $0.value < $1.value }).first {
+            guard numberedSigns.filter({ $0.key != signed.key }).values.allSatisfy({ $0 - signed.value >= 100 }) else {
+                return .unidentified
+            }
+            return candidates.first?.junction == signed.key ? .signedInterchange(signed.key) : .interchange(signed.key)
         }
         guard numberedSigns.isEmpty else { return .unidentified }
         if signs.count == 1, let signed = signs.first { return .interchange(signed) }
@@ -325,9 +458,23 @@ nonisolated enum A56TripMatcher {
         return .interchange(closest.junction)
     }
 
+    private static func point(at offset: Double, in route: [Segment]) -> (point: MKMapPoint, segment: Segment)? {
+        guard let segment = route.first(where: { offset >= $0.start && offset <= $0.start + $0.length }) else {
+            return nil
+        }
+        let fraction = (offset - segment.start) / segment.length
+        return (MKMapPoint(x: segment.from.x + fraction * segment.dx,
+                           y: segment.from.y + fraction * segment.dy), segment)
+    }
+
     private static func isExitInstruction(_ normalized: String) -> Bool {
         let words = normalized.split(separator: " ")
         return words.contains("exit") || words.contains("uscita") || words.contains("esci")
+    }
+
+    private static func isMergeInstruction(_ normalized: String) -> Bool {
+        (normalized.contains("a56") || normalized.contains("tangenziale"))
+            && (normalized.contains("merge") || normalized.contains("immett") || normalized.contains("entra"))
     }
 
     private static func signedExitNumber(in normalized: String) -> Int? {
@@ -369,10 +516,11 @@ nonisolated enum A56TripMatcher {
         on traversals: [Traversal],
         closures: [RoadClosure],
         departure: Date,
-        duration: TimeInterval
+        duration: TimeInterval,
+        coordinates: [CLLocationCoordinate2D] = []
     ) -> [Impact] {
         let arrival = departure.addingTimeInterval(max(60, duration))
-        return matchingImpacts(on: traversals, closures: closures.filter {
+        return matchingImpacts(on: traversals, coordinates: coordinates, closures: closures.filter {
             $0.start < arrival && departure < $0.end
         })
     }
@@ -383,27 +531,33 @@ nonisolated enum A56TripMatcher {
         on traversals: [Traversal],
         closures: [RoadClosure],
         departure: Date,
-        duration: TimeInterval
+        duration: TimeInterval,
+        coordinates: [CLLocationCoordinate2D] = []
     ) -> Impact? {
         let arrival = departure.addingTimeInterval(max(60, duration))
-        return matchingImpacts(on: traversals, closures: closures.filter {
+        return matchingImpacts(on: traversals, coordinates: coordinates, closures: closures.filter {
             $0.start >= arrival
         }).min { $0.closure.start < $1.closure.start }
     }
 
-    private static func matchingImpacts(on traversals: [Traversal], closures: [RoadClosure]) -> [Impact] {
-        closures.compactMap { closure in
+    private static func matchingImpacts(
+        on traversals: [Traversal], coordinates: [CLLocationCoordinate2D], closures: [RoadClosure]
+    ) -> [Impact] {
+        var impacts = closures.compactMap { closure -> Impact? in
             var possible: Impact?
             for traversal in traversals where closure.matches(direction: traversal.direction) {
                 guard let way = carriageways.first(where: { $0.direction == traversal.direction }) else {
                     continue
                 }
-                if closure.kind == .roadBlocked,
-                   let first = way.exits[closure.fromExit], let second = way.exits[closure.toExit] {
+                if closure.kind == .roadBlocked {
+                    let physical = A56RouteGeometry.resolvedReportedSegment(for: closure, direction: traversal.direction)
+                    guard let first = physical?.start ?? way.exits[closure.fromExit],
+                          let second = physical?.end ?? way.exits[closure.toExit] else { continue }
                     let low = min(first, second)
                     let high = max(first, second)
                     let overlap = min(high, traversal.end) - max(low, traversal.start)
-                    if overlap > boundaryTolerance {
+                    if overlap > boundaryTolerance,
+                       closure.reportedSegment == nil || physical != nil {
                         return Impact(closure: closure, kind: .roadBlock, ramp: nil)
                     }
                     if overlap >= -boundaryTolerance {
@@ -424,7 +578,7 @@ nonisolated enum A56TripMatcher {
                             if abs(position - transition) <= rampTolerance {
                                 possible = Impact(closure: closure, kind: .ramp, ramp: ramp)
                             }
-                        case .onCarriageway:
+                        case .onCarriageway, .continuation:
                             break
                         }
                     }
@@ -432,6 +586,48 @@ nonisolated enum A56TripMatcher {
             }
             return possible
         }
-        .sorted { $0.kind.rawValue < $1.kind.rawValue }
+        // A trip can stay entirely on the A1 side of an officially closed
+        // connection. Check that physical part independently of A56 usage;
+        // do not relabel the A1 as an A56 traversal to surface its closure.
+        if !coordinates.isEmpty {
+            let route = segments(coordinates.map(MKMapPoint.init))
+            for closure in closures where closure.kind == .roadBlocked && closure.reportedSegment != nil {
+                guard !impacts.contains(where: { $0.closure.id == closure.id && $0.blocksRoute }) else { continue }
+                for direction in Direction.allCases where closure.matches(direction: direction) {
+                    guard let physical = A56RouteGeometry.resolvedReportedSegment(for: closure, direction: direction),
+                          followsConnection(route: route, connection: physical.connectionCoordinates) else { continue }
+                    impacts.removeAll { $0.closure.id == closure.id }
+                    impacts.append(Impact(closure: closure, kind: .roadBlock, ramp: nil))
+                    break
+                }
+            }
+        }
+        return impacts.sorted { $0.kind.rawValue < $1.kind.rawValue }
+    }
+
+    private static func followsConnection(route: [Segment], connection: [CLLocationCoordinate2D]) -> Bool {
+        let road = segments(connection.map(MKMapPoint.init))
+        guard !road.isEmpty, let last = route.last else { return false }
+        var first: (route: Double, road: Double)?
+        var previous: (route: Double, road: Double)?
+        var offset = sampleSpacing / 2
+        while offset < last.start + last.length {
+            defer { offset += sampleSpacing }
+            guard let sample = point(at: offset, in: route),
+                  let match = road.compactMap({ $0.project(sample.point, heading: sample.segment) })
+                    .filter({ $0.distance <= 12 }).min(by: { $0.distance < $1.distance }) else { continue }
+            if let previous,
+               offset - previous.route > 1.5 * sampleSpacing
+                || match.position - previous.road < -8
+                || match.position - previous.road > offset - previous.route + 40 {
+                first = nil
+            }
+            if first == nil { first = (offset, match.position) }
+            previous = (offset, match.position)
+            if let first, offset - first.route >= minimumRun, match.position - first.road >= minimumRun * 0.75 {
+                return true
+            }
+        }
+        return false
     }
 }

@@ -147,7 +147,8 @@ nonisolated enum AutostradeClosureMapper {
                 isFullClosure: isFull,
                 sourceText: source,
                 evidence: .scheduled,
-                reportedWindow: window.reportedWindow
+                reportedWindow: window.reportedWindow,
+                reportedSegment: isFull ? terminalReportedSegment(e) : nil
             )
         }
     }
@@ -235,6 +236,28 @@ nonisolated enum AutostradeClosureMapper {
     static func segmentEndpoints(_ e: AutostradeEvent) -> (Int, Int)? {
         let notice = NoticeText.segmentEndpoints(in: e.tDesIt ?? "")
         let noticePlaces = notice.map { Set([$0.0, $0.1]) }
+
+        // The publisher also uses 1117 beside the distinct official point
+        // 11222 (Secondigliano-Aeroporto). In that specific terminal segment,
+        // both prose labels resolve to our coarse position 1. The two known
+        // point IDs still distinguish positions 1 and 2; do not collapse them
+        // with the terminal-name override below. Require both published labels
+        // and compatible structured names, so unrelated contradictions remain
+        // unresolved instead of silently trusting an arbitrary pair of IDs.
+        if noticePlaces == Set([1]),
+           let labels = NoticeText.segmentLocations(in: e.tDesIt ?? ""),
+           Set([A56Line.normalize(labels.0), A56Line.normalize(labels.1)])
+               == Set(["fine tangenziale napoli", "secondigliano aeroporto"]),
+           let firstID = e.cPntDtxPlsPri, let secondID = e.cPntDtxPlsSec,
+           Set([firstID, secondID]) == Set([11222, 1117]),
+           !A56Line.hasResolutionConflict(pointID: firstID, named: e.locpri),
+           !A56Line.hasResolutionConflict(pointID: secondID, named: e.locsec),
+           let first = A56Line.resolveExit(pointID: firstID, named: e.locpri),
+           let second = A56Line.resolveExit(pointID: secondID, named: e.locsec), first != second,
+           terminalReportedSegment(e) != nil {
+            return (first, second)
+        }
+
         func resolve(_ id: Int?, _ name: String?) -> (exit: Int?, conflicts: Bool) {
             // For segments, 1117 can label the terminal as generic “Capodichino”.
             // Distinguish it from 11071 (Capodichino Svincolo) only when the
@@ -263,6 +286,25 @@ nonisolated enum AutostradeClosureMapper {
               [first.exit, second.exit].compactMap({ $0 }).allSatisfy({ $0 == a || $0 == b })
         else { return nil }
         return (a, b)
+    }
+
+    /// Preserve the physical extent of the recovered terminal notice. Its
+    /// airport endpoint is outside the static mainline geometry, so consumers
+    /// must not mistake the two schematic anchors for the full published span.
+    static func terminalReportedSegment(_ e: AutostradeEvent) -> RoadClosure.ReportedSegment? {
+        guard let firstID = e.cPntDtxPlsPri, let secondID = e.cPntDtxPlsSec,
+              Set([firstID, secondID]) == Set([11222, 1117]),
+              let latitude1 = e.nCrdLatIni, let longitude1 = e.nCrdLonIni,
+              let latitude2 = e.nCrdLatFin, let longitude2 = e.nCrdLonFin,
+              [latitude1, latitude2].allSatisfy({ $0.isFinite && (40.75...40.95).contains($0) }),
+              [longitude1, longitude2].allSatisfy({ $0.isFinite && (14.0...14.35).contains($0) }),
+              latitude1 != latitude2 || longitude1 != longitude2 else { return nil }
+        return .init(
+            first: .init(latitude: latitude1, longitude: longitude1),
+            second: .init(latitude: latitude2, longitude: longitude2),
+            firstLabel: firstID == 11222 ? "Secondigliano-Aeroporto" : "Fine Tangenziale Napoli",
+            secondLabel: secondID == 11222 ? "Secondigliano-Aeroporto" : "Fine Tangenziale Napoli"
+        )
     }
 
     // MARK: - Windows

@@ -1,0 +1,72 @@
+Attributes: Application, 0x10a029f40, pid: 12745, label: 'IntegrationHarness'
+Element subtree:
+ →Application, 0x10a029f40, pid: 12745, label: 'IntegrationHarness'
+    Window (Main), 0x10a028500, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10a028dc0, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10a029180, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x10a028f00, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x10a029040, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x10a02a6c0, {{0.0, 0.0}, {402.0, 874.0}}
+                NavigationBar, 0x10a02b840, {{0.0, 62.0}, {402.0, 54.0}}, identifier: 'Dettaglio chiusura'
+                  StaticText, 0x10a028140, {{128.3, 73.7}, {145.0, 20.7}}, label: 'Dettaglio chiusura'
+                Other, 0x10a028640, {{0.0, 0.0}, {402.0, 874.0}}
+                  Other, 0x10a02be80, {{0.0, 0.0}, {402.0, 874.0}}
+                    Other, 0x10a02b340, {{0.0, 0.0}, {402.0, 874.0}}
+                      Other, 0x10a02aa80, {{0.0, 0.0}, {402.0, 874.0}}
+                        ScrollView, 0x10a029900, {{0.0, 0.0}, {402.0, 874.0}}
+                          Other, 0x10a029b80, {{0.0, 0.0}, {402.0, 874.0}}
+                            Other, 0x10a029680, {{0.0, 0.0}, {402.0, 156.0}}
+                          Other, 0x10a02a300, {{0.0, 0.0}, {402.0, 874.0}}
+                          Other, 0x10a02a580, {{0.0, 116.0}, {402.0, 872.0}}
+                            Other, 0x10a02a440, {{32.0, 144.0}, {338.0, 799.7}}
+                              Image, 0x10a02a940, {{32.0, 144.0}, {44.0, 44.0}}, identifier: 'nosign', label: 'Stop'
+                              StaticText, 0x10a02ae40, {{88.0, 144.0}, {136.3, 26.3}}, label: 'Strada chiusa'
+                              StaticText, 0x10a02ad00, {{88.0, 178.5}, {104.7, 18.0}}, label: 'Verso Pozzuoli'
+                              Image, 0x10a02af80, {{210.0, 181.7}, {12.7, 11.3}}, identifier: 'exclamationmark.triangle.fill', label: 'Warning'
+                              StaticText, 0x10a02b0c0, {{210.0, 180.3}, {45.7, 14.3}}, label: 'Alta'
+                              StaticText, 0x10a02b700, {{32.0, 212.7}, {321.0, 86.3}}, label: 'L’avviso segnala la chiusura del tratto tra Secondigliano-Aeroporto e Capodichino, compreso il collegamento autostradale interessato.'
+                              Image, 0x10a029e00, {{33.3, 348.7}, {17.3, 17.3}}, identifier: 'clock', label: 'Clock'
+                              StaticText, 0x10a02a080, {{33.3, 347.0}, {89.3, 20.3}}, label: 'Quando'
+                              StaticText, 0x10a02abc0, {{32.0, 384.2}, {38.0, 14.3}}, label: 'Giorno'
+                              StaticText, 0x10a02a800, {{32.0, 402.5}, {127.3, 18.0}}, label: 'dom 15 novembre'
+                              StaticText, 0x10a02b5c0, {{215.2, 384.2}, {88.3, 14.3}}, label: 'Orario di Napoli'
+                              StaticText, 0x10a02b480, {{215.2, 402.5}, {103.0, 18.0}}, label: '15:26 – 16:36'
+                              Image, 0x10a02b980, {{34.0, 475.0}, {25.7, 13.0}}, identifier: 'road.lanes', label: 'Road With Lane Markings'
+                              StaticText, 0x10a02bd40, {{34.0, 471.3}, {177.0, 20.3}}, label: 'Tratto interessato'
+                              Other, 0x10a02bc00, {{32.0, 507.7}, {338.0, 73.7}}, label: 'Schema A56 da Pozzuoli a Capodichino. 1 limitazione verso Pozzuoli. Italia ’90, solo ingresso in entrambe le direzioni.'
+                                Image, 0x10a0292c0, {{33.3, 510.0}, {11.7, 9.7}}, identifier: 'arrow.left', label: 'Left'
+                                StaticText, 0x10a02a1c0, {{50.3, 507.7}, {51.0, 14.3}}, label: 'Pozzuoli'
+                                StaticText, 0x10a029cc0, {{276.0, 507.7}, {75.7, 14.3}}, label: 'Capodichino'
+                                Image, 0x107284dc0, {{357.0, 510.0}, {11.7, 9.7}}, identifier: 'arrow.right', label: 'Right'
+                                ScrollView, 0x107287840, {{32.0, 530.0}, {338.0, 30.0}}
+                                  Other, 0x1072875c0, {{32.0, 530.0}, {338.0, 30.0}}
+                                  Other, 0x107284640, {{32.0, 542.0}, {338.0, 15.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%
+                                    Other, 0x107287700, {{360.0, 554.0}, {7.0, 3.0}}
+                                  Other, 0x10aa80000, {{32.0, 542.0}, {338.0, 15.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%
+                                    Other, 0x10aa80140, {{360.0, 554.0}, {7.0, 3.0}}
+                                StaticText, 0x10aa80280, {{32.0, 568.0}, {123.7, 13.3}}, label: 'I90 · Ingresso Italia ’90'
+                              Image, 0x10aa803c0, {{36.7, 635.3}, {18.7, 9.3}}, identifier: 'road.lanes', label: 'Road With Lane Markings'
+                              StaticText, 0x10aa80500, {{71.0, 622.7}, {180.0, 18.0}}, label: 'Secondigliano-Aeroporto'
+                              StaticText, 0x10aa80640, {{71.0, 642.7}, {200.3, 14.3}}, label: 'Inizio del tratto indicato dal gestore'
+                              Image, 0x10aa80780, {{36.7, 688.0}, {18.7, 9.3}}, identifier: 'road.lanes', label: 'Road With Lane Markings'
+                              StaticText, 0x10aa808c0, {{71.0, 675.3}, {89.7, 18.0}}, label: 'Capodichino'
+                              StaticText, 0x10aa80a00, {{71.0, 695.3}, {194.3, 14.3}}, label: 'Fine del tratto indicato dal gestore'
+                              Image, 0x10aa80b40, {{34.0, 768.0}, {14.7, 18.3}}, identifier: 'doc.text.fill', label: 'Plain Text Document'
+                              StaticText, 0x10aa80c80, {{34.0, 767.0}, {138.3, 20.3}}, label: 'Fonte del dato'
+                              StaticText, 0x10aa80dc0, {{32.0, 799.7}, {263.7, 38.0}}, label: 'Avviso ricevuto dalla programmazione del gestore'
+                              StaticText, 0x10aa80f00, {{32.0, 859.7}, {46.7, 18.0}}, label: 'Motivo'
+                              StaticText, 0x10aa81040, {{32.0, 849.7}, {338.0, 38.0}}, label: 'Motivo, Verifica di integrazione con dati dimostrativi'
+                              Link, 0x10aa81180, {{32.0, 899.7}, {338.0, 44.0}}, label: 'Consulta gli avvisi del gestore'
+                          Other, 0x10aa812c0, {{369.0, 116.0}, {30.0, 696.0}}, label: 'Vertical scroll bar, 2 pages', value: 0%
+                            Other, 0x10aa81400, {{396.0, 119.0}, {3.0, 590.0}}
+                          Other, 0x10aa81540, {{369.0, 116.0}, {30.0, 696.0}}, label: 'Vertical scroll bar, 2 pages', value: 0%
+                            Other, 0x10aa81680, {{396.0, 119.0}, {3.0, 590.0}}
+                Toolbar, 0x10aa817c0, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar'
+                  Other, 0x10aa81900, {{0.0, 0.0}, {402.0, 874.0}}
+Path to element:
+ →Application, 0x10a029f40, pid: 12745, label: 'IntegrationHarness'
+Query chain:
+ →Find: Target Application 'com.a56.final.integration'
+  Output: {
+    Application, 0x10aa81a40, pid: 12745, label: 'IntegrationHarness'
+  }

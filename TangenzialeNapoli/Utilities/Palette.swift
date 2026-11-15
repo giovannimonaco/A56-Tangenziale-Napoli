@@ -9,12 +9,11 @@ nonisolated extension ShapeStyle where Self == Color {
     static var a56Block: Color { Color("A56Issue") }
 }
 
-/// Shared card treatment: surface fill plus an optional faint accent wash.
-/// The wash is kept subtle so cards stay readable in Dark Mode.
+/// Quiet, shared surface. Status is conveyed by the content's words and symbols;
+/// cards use a neutral fill and boundary without decorative accent edges.
 private struct A56SurfaceModifier: ViewModifier {
-    var accent: Color?
     var radius: CGFloat
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
 
     func body(content: Content) -> some View {
         content
@@ -24,37 +23,21 @@ private struct A56SurfaceModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .fill(Color.a56Surface)
                     .overlay {
-                        if let accent {
-                            LinearGradient(
-                                colors: [
-                                    accent.opacity(reduceTransparency ? 0.12 : 0.16),
-                                    accent.opacity(0.025)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-                        }
-                    }
-                    .overlay {
                         RoundedRectangle(cornerRadius: radius, style: .continuous)
                             .strokeBorder(
-                                accent?.opacity(0.13) ?? Color.a56Shadow.opacity(0.09),
-                                lineWidth: 0.75
+                                Color.primary.opacity(contrast == .increased ? 0.28 : 0.07),
+                                lineWidth: contrast == .increased ? 1 : 0.5
                             )
                     }
-                    .shadow(
-                        color: (accent ?? Color.a56Shadow).opacity(0.075),
-                        radius: 12,
-                        y: 5
-                    )
             }
     }
 }
 
 extension View {
-    func a56Surface(accent: Color? = nil, radius: CGFloat = 20) -> some View {
-        modifier(A56SurfaceModifier(accent: accent, radius: radius))
+    func a56Surface(accent: Color? = nil, radius: CGFloat = 18) -> some View {
+        // Retain the argument for existing detail/status call sites. Accent
+        // belongs to their semantic content, never to the surface treatment.
+        modifier(A56SurfaceModifier(radius: radius))
     }
 }
 

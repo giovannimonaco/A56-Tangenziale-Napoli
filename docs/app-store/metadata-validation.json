@@ -1,0 +1,37 @@
+{
+  "checked_date": "2026-11-15",
+  "locale": "it",
+  "fields": {
+    "name": {
+      "count": 10,
+      "unit": "characters",
+      "limit": 30,
+      "passed": true
+    },
+    "subtitle": {
+      "count": 26,
+      "unit": "characters",
+      "limit": 30,
+      "passed": true
+    },
+    "promotional_text": {
+      "count": 152,
+      "unit": "characters",
+      "limit": 170,
+      "passed": true
+    },
+    "description": {
+      "count": 1409,
+      "unit": "characters",
+      "limit": 4000,
+      "passed": true
+    },
+    "keywords": {
+      "count": 86,
+      "unit": "UTF-8 bytes",
+      "limit": 100,
+      "passed": true
+    }
+  },
+  "passed": true
+}

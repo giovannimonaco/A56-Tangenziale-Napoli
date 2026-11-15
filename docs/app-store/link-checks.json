@@ -1,0 +1,169 @@
+{
+  "checked_at_utc": "2026-11-15T13:21:01.168731+00:00",
+  "method": "Unauthenticated HTTP GET, redirects followed; no login or cookies persisted. HTTP success alone does not prove content suitability or reuse permission.",
+  "results": [
+    {
+      "url": "https://www.autostrade.it/it/previsioni?strada=A56",
+      "status": 200,
+      "final_url": "https://www.autostrade.it/it/previsioni?strada=A56",
+      "content_type": "text/html;charset=UTF-8",
+      "last_modified": null,
+      "bytes": 164609
+    },
+    {
+      "url": "https://www.tangenzialedinapoli.it/it/servizi/traffico/traffico-in-campania",
+      "status": 200,
+      "final_url": "https://www.tangenzialedinapoli.it/it/servizi/traffico/traffico-in-campania",
+      "content_type": "text/html;charset=UTF-8",
+      "last_modified": null,
+      "bytes": 116897
+    },
+    {
+      "url": "https://www.autostrade.it/it/privacy/sito-web",
+      "status": 200,
+      "final_url": "https://www.autostrade.it/it/privacy/sito-web",
+      "content_type": "text/html;charset=UTF-8",
+      "last_modified": null,
+      "bytes": 161024
+    },
+    {
+      "url": "https://www.apple.com/legal/privacy/data/it/apple-maps/",
+      "status": 200,
+      "final_url": "https://www.apple.com/legal/privacy/data/it/apple-maps/",
+      "content_type": "text/html; charset=utf-8",
+      "last_modified": null,
+      "bytes": 117732
+    },
+    {
+      "url": "https://www.apple.com/legal/internet-services/maps/terms-it.html",
+      "status": 200,
+      "final_url": "https://www.apple.com/legal/internet-services/maps/terms-it.html",
+      "content_type": "text/html; charset=utf-8",
+      "last_modified": null,
+      "bytes": 131097
+    },
+    {
+      "url": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli/issues",
+      "status": 200,
+      "final_url": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli/issues",
+      "content_type": "text/html; charset=utf-8",
+      "last_modified": null,
+      "bytes": 189851
+    },
+    {
+      "url": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli/blob/main/docs/privacy.md",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://viabilita.autostrade.it/json/previsioni.json",
+      "status": 200,
+      "final_url": "https://viabilita.autostrade.it/json/previsioni.json",
+      "content_type": "application/json",
+      "last_modified": "Sun, 15 Nov 2026 13:20:08 GMT",
+      "bytes": 1355325,
+      "json_type": "dict",
+      "json_items": 1,
+      "top_keys": [
+        "events"
+      ]
+    },
+    {
+      "url": "https://viabilita.autostrade.it/json/eventi.json",
+      "status": 200,
+      "final_url": "https://viabilita.autostrade.it/json/eventi.json",
+      "content_type": "application/json",
+      "last_modified": "Sun, 15 Nov 2026 13:20:08 GMT",
+      "bytes": 76355,
+      "json_type": "dict",
+      "json_items": 1,
+      "top_keys": [
+        "events"
+      ]
+    },
+    {
+      "url": "https://giovannimonaco.github.io/audiva-site/support/it.html",
+      "status": 200,
+      "final_url": "https://giovannimonaco.github.io/audiva-site/support/it.html",
+      "content_type": "text/html; charset=utf-8",
+      "last_modified": "Sun, 15 Nov 2026 10:05:20 GMT",
+      "bytes": 2567,
+      "public_emails": []
+    },
+    {
+      "url": "https://giovannimonaco.github.io/audiva-site/privacy/it.html",
+      "status": 200,
+      "final_url": "https://giovannimonaco.github.io/audiva-site/privacy/it.html",
+      "content_type": "text/html; charset=utf-8",
+      "last_modified": "Sun, 15 Nov 2026 10:05:20 GMT",
+      "bytes": 3568,
+      "public_emails": []
+    },
+    {
+      "url": "https://www.tangenzialedinapoli.it/contatti-e-customer-care",
+      "status": 200,
+      "final_url": "https://www.tangenzialedinapoli.it/contatti-e-customer-care",
+      "content_type": "text/html;charset=UTF-8",
+      "last_modified": null,
+      "bytes": 181511
+    },
+    {
+      "url": "https://www.autostrade.it/it/web/autostrade/contatti",
+      "status": 200,
+      "final_url": "https://www.autostrade.it/it/web/autostrade/contatti",
+      "content_type": "text/html;charset=UTF-8",
+      "last_modified": null,
+      "bytes": 163188
+    },
+    {
+      "url": "https://www.autostrade.it/it/note-legali",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.autostrade.it/it/disclaimer",
+      "status": 404,
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli",
+      "status": 200,
+      "final_url": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli",
+      "content_type": "text/html; charset=utf-8",
+      "last_modified": null,
+      "bytes": 232579
+    },
+    {
+      "url": "https://www.cciss.it/web/cciss/-/bozza",
+      "status": 200,
+      "final_url": "https://www.cciss.it/web/cciss/-/bozza",
+      "content_type": "text/html;charset=UTF-8",
+      "last_modified": null,
+      "bytes": 46521
+    },
+    {
+      "url": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli/blob/review/general-audit/docs/privacy.md",
+      "checked_at_utc": "2026-11-15T13:26:13.131182+00:00",
+      "status": 200,
+      "final_url": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli/blob/review/general-audit/docs/privacy.md",
+      "bytes": 186810
+    },
+    {
+      "url": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
+      "checked_at_utc": "2026-11-15T13:26:13.964723+00:00",
+      "status": 200,
+      "final_url": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
+      "bytes": 304708
+    },
+    {
+      "url": "https://raw.githubusercontent.com/giovannimonaco/A56-Tangenziale-Napoli/review/general-audit/docs/privacy.md",
+      "checked_at_utc": "2026-11-15T13:26:42.379213+00:00",
+      "status": 200,
+      "bytes": 2650,
+      "sha256": "3eb8b83b2193ae7b0d92a992609f8b0fd9038a712de8d5e28f399c599d412b1a",
+      "contains_policy_title": true,
+      "matches_local_policy": false,
+      "mentions_widget": false
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "date": "2026-11-15",
+  "version": "1.0",
+  "build": "7",
+  "unitTests": {
+    "result": "Passed",
+    "passedTests": 70,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "totalTestCount": 70
+  },
+  "archive": [
+    {
+      "bundleId": "com.giovannimonaco.TangenzialeNapoli",
+      "version": "1.0",
+      "build": "7",
+      "iPhoneOnly": true,
+      "minimumOS": "18.0",
+      "manifestPresent": true,
+      "signatureValid": true
+    },
+    {
+      "bundleId": "com.giovannimonaco.TangenzialeNapoli.widgets",
+      "version": "1.0",
+      "build": "7",
+      "iPhoneOnly": true,
+      "minimumOS": "18.0",
+      "manifestPresent": true,
+      "signatureValid": true
+    }
+  ],
+  "ipa": {
+    "ipa": "build/AppStore-1.0-7/TangenzialeNapoli.ipa",
+    "bytes": 7263628,
+    "items": [
+      {
+        "bundleId": "com.giovannimonaco.TangenzialeNapoli",
+        "build": "7",
+        "iPhoneOnly": true,
+        "appStoreDistributionProfile": true,
+        "signatureValid": true,
+        "privacyManifestPresent": true
+      },
+      {
+        "bundleId": "com.giovannimonaco.TangenzialeNapoli.widgets",
+        "build": "7",
+        "iPhoneOnly": true,
+        "appStoreDistributionProfile": true,
+        "signatureValid": true,
+        "privacyManifestPresent": true
+      }
+    ]
+  },
+  "physicalDeviceFetch": {
+    "lastFetchedAtRome": "2026-11-15T15:30:00.059484+01:00",
+    "upcomingClosures": 48,
+    "withReportedSegment": 1,
+    "freshFetchWithinFiveMinutes": true
+  },
+  "appStoreDraft": {
+    "appId": "6782002695",
+    "name": "A56 Napoli",
+    "primaryLocale": "it",
+    "version": "1.0",
+    "state": "PREPARE_FOR_SUBMISSION",
+    "releaseType": "MANUAL",
+    "primaryCategory": "NAVIGATION",
+    "ItalianMetadataMatchesLocal": true,
+    "privacyPolicyUrl": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli/blob/review/general-audit/docs/privacy.md",
+    "supportUrl": "https://github.com/giovannimonaco/A56-Tangenziale-Napoli/blob/review/general-audit/docs/app-store/support.md",
+    "binaryUploadedByThisTask": false
+  },
+  "ageRating": {
+    "questionnaireMatchesLocal": true,
+    "appStoreAgeRating": "FOUR_PLUS",
+    "state": "PREPARE_FOR_SUBMISSION"
+  },
+  "newBinaryUploaded": false,
+  "submittedForReview": false,
+  "pending": [
+    "Final UI integration QA",
+    "Remote CI",
+    "Data-source reuse conditions",
+    "Final Store declarations and distribution choices"
+  ]
+}

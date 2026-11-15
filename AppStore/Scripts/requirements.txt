@@ -1,0 +1,3 @@
+PyJWT[crypto]
+requests
+Pillow

@@ -3,6 +3,7 @@ import SwiftUI
 struct InfoView: View {
     let viewModel: ClosuresViewModel
     @Binding var direction: Direction
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var appVersion: String {
         let info = Bundle.main.infoDictionary
@@ -16,6 +17,7 @@ struct InfoView: View {
             appIdentity
             safetySection
             readingSection
+            widgetSection
             detailsSection
 
             if AppFeatures.showsLocalHistoryInInfo {
@@ -32,7 +34,10 @@ struct InfoView: View {
 
     private var appIdentity: some View {
         Section {
-            HStack(spacing: 14) {
+            let identityLayout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                : AnyLayout(HStackLayout(spacing: 14))
+            identityLayout {
                 Image(systemName: "road.lanes")
                     .font(.system(size: 28, weight: .semibold))
                     .foregroundStyle(.tint)
@@ -45,11 +50,11 @@ struct InfoView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Spacer(minLength: 4)
+                if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 4) }
 
                 Text("v\(appVersion)")
                     .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(Color.secondary)
             }
             .padding(.vertical, 4)
         }
@@ -101,6 +106,20 @@ struct InfoView: View {
         }
     }
 
+    private var widgetSection: some View {
+        Section("Widget nella schermata Home") {
+            Text("Apri la galleria dei widget dalla schermata Home, cerca «A56 Napoli» e aggiungi «Chiusure A56».")
+            Text(
+                "Il widget scarica gli avvisi anche senza aprire l’app. iOS decide quando aggiornarlo: "
+                + "controlla sempre l’ora dei dati mostrata nel widget."
+            )
+            .font(.footnote)
+            .foregroundStyle(Color.secondary)
+            Label("Tocca il widget per aprire le chiusure nell’app.", systemImage: "hand.tap")
+                .font(.footnote)
+        }
+    }
+
     private var dataSection: some View {
         List {
             Section {
@@ -149,8 +168,11 @@ struct InfoView: View {
             } label: {
                 Label("Fonti, licenze e indipendenza", systemImage: "doc.text")
             }
+            Link(destination: AppLinks.contact) {
+                Label("Assistenza via email", systemImage: "envelope")
+            }
             Link(destination: AppLinks.support) {
-                Label("Assistenza A56 Napoli", systemImage: "questionmark.circle")
+                Label("Segnalazioni pubbliche", systemImage: "questionmark.circle")
             }
         }
     }
@@ -177,18 +199,40 @@ struct InfoView: View {
             Section("Avvisi e preferenze") {
                 Text(
                     "Per scaricare gli avvisi, il dispositivo si collega ad Autostrade per l’Italia, "
-                    + "che può ricevere informazioni di connessione come l’indirizzo IP. Il dispositivo salva "
-                    + "le preferenze dell’app e gli avvisi per 10 giorni dalla fine delle chiusure, salvo modifica "
-                    + "della durata. Puoi cancellare gli avvisi da Info → Archivio locale."
+                    + "che può ricevere informazioni di connessione come l’indirizzo IP. "
+                    + "L’app non invia al gestore posizione, ricerche o itinerari."
+                )
+                Text(
+                    "L’app salva sul dispositivo preferenze, preferiti e avvisi. Per impostazione predefinita "
+                    + "gli avvisi terminati restano per 10 giorni; puoi scegliere da 1 a 60 giorni e cancellare "
+                    + "gli avvisi dell’app da Info → Archivio locale."
                 )
                 Link("Informativa di Autostrade per l’Italia", destination: AppLinks.autostradePrivacy)
             }
+            Section("Widget") {
+                Text(
+                    "Il widget può scaricare gli avvisi direttamente dal gestore quando iOS gli consente "
+                    + "di aggiornarsi, senza aprire l’app. Non usa la tua posizione, le ricerche o i preferiti."
+                )
+                Text(
+                    "Conserva una copia separata degli avvisi sul dispositivo. «Elimina archivio locale» "
+                    + "nell’app non cancella questa copia. Per rimuovere i dati locali dell’app e del widget, "
+                    + "elimina l’app dalle impostazioni di iOS: rimuovere solo l’icona dalla Home non basta."
+                )
+            }
             Section("Contatti") {
                 Link("Informativa privacy sul web", destination: AppLinks.privacyPolicy)
-                Link("Contatta lo sviluppatore", destination: AppLinks.support)
-                Text("Il canale di assistenza è pubblico: evita di inserire indirizzi, posizione o altri dati personali.")
+                Link("Email per assistenza e richieste riservate", destination: AppLinks.contact)
+                Text(
+                    "Lo sviluppatore riceve il tuo indirizzo email e ciò che scegli di inviare per rispondere "
+                    + "alla richiesta. Evita dati personali non necessari."
+                )
+                .font(.footnote)
+                .foregroundStyle(Color.secondary)
+                Link("Segnalazioni pubbliche su GitHub", destination: AppLinks.support)
+                Text("Le segnalazioni su GitHub sono pubbliche: non pubblicare indirizzi, posizione, itinerari o altri dati personali.")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.secondary)
             }
         }
         .navigationTitle("Informativa privacy")

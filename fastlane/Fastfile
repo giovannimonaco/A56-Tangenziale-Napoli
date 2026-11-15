@@ -1,0 +1,104 @@
+# No lane uploads a binary, selects a build, submits for review or publishes.
+# Only `metadata` writes to App Store Connect; run it separately after release QA.
+ENV["FASTLANE_SKIP_DOCS"] = "1" # Preserve the hand-written release instructions.
+require_relative "lib/a56_release"
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Run shell regressions and iOS tests on an isolated disposable simulator (local only)"
+  lane :test do
+    sh("bash", File.join(A56Release::ROOT, "Tests/test-xcode.sh"))
+  end
+
+  desc "Create a signed Release xcarchive locally, without export or upload"
+  lane :archive do |options|
+    archive_path = A56Release.archive_path(options[:archive_path])
+    UI.user_error!("Archive already exists; choose a new archive_path") if File.exist?(archive_path)
+    number = options[:build_number] || ENV["A56_BUILD_NUMBER"]
+    UI.user_error!("build_number must contain digits only") if number && !number.to_s.match?(/\A[0-9]+\z/)
+    parameters = {
+      project: File.join(A56Release::ROOT, "TangenzialeNapoli.xcodeproj"),
+      scheme: "TangenzialeNapoli",
+      configuration: "Release",
+      destination: "generic/platform=iOS",
+      archive_path: archive_path,
+      derived_data_path: File.join(A56Release::OUTPUT, "DerivedData"),
+      buildlog_path: File.join(A56Release::OUTPUT, "logs"),
+      output_directory: A56Release::OUTPUT,
+      skip_package_ipa: true,
+      skip_codesigning: false,
+      clean: true,
+      xcodebuild_formatter: ""
+    }
+    parameters[:xcargs] = "CURRENT_PROJECT_VERSION=#{number}" if number
+    build_app(**parameters)
+  end
+
+  desc "Export an existing archive to a local App Store IPA; no upload or provisioning mutation"
+  lane :export do |options|
+    archive_path = A56Release.archive_path(options[:archive_path])
+    UI.user_error!("Archive is missing Info.plist") unless File.file?(File.join(archive_path, "Info.plist"))
+    directory = A56Release.export_directory(options[:output_directory])
+    UI.user_error!("Export output directory already exists; choose a new output_directory") if File.exist?(directory)
+    plist = A56Release.write_export_options!(File.join(A56Release::OUTPUT, "configuration"))
+    sh("xcodebuild", "-exportArchive", "-archivePath", archive_path,
+       "-exportPath", directory, "-exportOptionsPlist", plist)
+  end
+
+  desc "Validate Italian metadata and review notes locally; no authentication or network"
+  lane :metadata_check do
+    A56Release.validate_metadata!.each do |field, values|
+      unit = field == "keywords" ? "UTF-8 bytes" : "characters"
+      UI.message("it #{field}: #{values[:count]}/#{values[:limit]} #{unit}")
+    end
+    UI.success("Italian metadata and review notes are present and valid")
+  end
+
+  desc "Upload only Italian text and review notes to the existing 1.0 draft; no binary, screenshots or review"
+  lane :metadata do
+    metadata_check
+    if ENV.keys.any? { |name| name.start_with?("DELIVER_") }
+      UI.user_error!("Remove inherited DELIVER_* configuration before updating the A56 draft")
+    end
+    %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH].each do |name|
+      UI.user_error!("Missing environment variable #{name}") if ENV[name].to_s.empty?
+    end
+    key_path = File.expand_path(ENV.fetch("ASC_KEY_PATH"), A56Release::ROOT)
+    UI.user_error!("ASC_KEY_PATH does not identify a readable file") unless File.file?(key_path) && File.readable?(key_path)
+    app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_filepath: key_path,
+      duration: 500,
+      in_house: false
+    )
+    app = Spaceship::ConnectAPI::App.find(A56Release::APP_IDENTIFIER)
+    UI.user_error!("Existing A56 app record not found") unless app
+    draft = app.get_edit_app_store_version(platform: "IOS")
+    unless draft && draft.version_string == A56Release::VERSION && draft.app_store_state == "PREPARE_FOR_SUBMISSION"
+      UI.user_error!("Expected existing editable 1.0 PREPARE_FOR_SUBMISSION draft")
+    end
+    upload_to_app_store(
+      app_identifier: A56Release::APP_IDENTIFIER,
+      app_version: A56Release::VERSION,
+      platform: "ios",
+      metadata_path: A56Release::METADATA,
+      app_review_information: { notes: File.read(A56Release::NOTES, encoding: "UTF-8").strip },
+      languages: ["it"],
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: false,
+      skip_app_version_update: true,
+      submit_for_review: false,
+      automatic_release: nil,
+      auto_release_date: nil,
+      phased_release: nil,
+      reset_ratings: nil,
+      edit_live: false,
+      reject_if_possible: false,
+      run_precheck_before_submit: false,
+      force: true
+    )
+  end
+end

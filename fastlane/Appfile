@@ -1,0 +1,4 @@
+app_identifier("com.giovannimonaco.TangenzialeNapoli")
+
+# Optional local signing-team selection. No Apple ID or credential is stored here.
+team_id(ENV["A56_TEAM_ID"]) unless ENV["A56_TEAM_ID"].to_s.empty?

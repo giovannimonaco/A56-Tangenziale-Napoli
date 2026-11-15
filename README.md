@@ -19,6 +19,7 @@ L’app trasforma i flussi pubblici del gestore in una vista chiara dei tratti a
 - Tab **Percorsi** con ricerca indirizzi, posizione facoltativa e confronto in auto con e senza Tangenziale
 - Schede dettagliate con orari, causa e svincoli interessati
 - Avvisi salvati consultabili offline, con data e ora dell’ultimo aggiornamento disponibile
+- Widget piccoli e medi con scaricamento online autonomo, ora dei dati e stato di aggiornamento; iOS determina la frequenza effettiva
 - Archivio locale con durata configurabile e cancellazione dall’app
 - Nessun account, sistema di analytics, pubblicità o chiave API
 - Etichette di accessibilità e supporto a Riduci movimento
@@ -74,6 +75,10 @@ Per ottenere stati deterministici nelle build Debug sono disponibili questi argo
 - `--show-closures` apre l’elenco delle chiusure al posto della mappa.
 
 Su macOS, esegui `Tests/check-a56.sh` per verificare il mapping delle chiusure, il riconoscimento dei percorsi A56, la gestione di feed incompleti e il recupero dell’archivio.
+
+`Tests/test-xcode.sh` esegue anche la suite Swift Testing su un iPhone simulato isolato. Per i test UI permanenti usa `A56_TEST_SCHEME=A56UI bash Tests/test-xcode.sh`. Istruzioni e limiti delle verifiche sono in [Tests/README.md](Tests/README.md).
+
+I widget usano gli stessi controlli di qualità dei feed dell’app e una cache separata. Possono aggiornarsi senza un precedente avvio dell’app, ma non offrono un monitoraggio continuo: mostrano sempre l’ora dell’ultimo controllo e indicano i dati da aggiornare dopo cinque minuti. Il tap apre il tab Chiusure.
 
 ## Privacy e sicurezza
 

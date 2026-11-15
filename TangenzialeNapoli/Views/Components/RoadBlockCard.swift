@@ -6,8 +6,11 @@ struct RoadBlockCard: View {
     /// When the closure is happening now, show "fino alle …" instead of the range.
     var isActive: Bool = false
 
-    private var fromName: String { A56Line.driverLabel(for: closure.fromExit) }
-    private var toName: String { A56Line.driverLabel(for: closure.toExit) }
+    private var reported: A56RouteGeometry.ResolvedReportedSegment? {
+        A56RouteGeometry.resolvedReportedSegment(for: closure, direction: closure.direction)
+    }
+    private var fromName: String { reported?.startLabel ?? A56Line.driverLabel(for: closure.fromExit) }
+    private var toName: String { reported?.endLabel ?? A56Line.driverLabel(for: closure.toExit) }
     private var accent: Color { .a56Block }
 
     /// "Esci a …" only comes from an official "Uscita consigliata" hint for

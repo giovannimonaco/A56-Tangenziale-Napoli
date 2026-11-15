@@ -19,6 +19,7 @@ The app turns the operator's public traffic feeds into a clear view of closed ca
 - **Routes** tab with address search, optional location and driving comparisons with and without the A56
 - Detailed closure cards with time window, cause and affected interchanges
 - Saved notices available offline and clearly marked for verification
+- Small and medium widgets with independent online requests, data timestamps and freshness warnings; iOS determines the actual refresh frequency
 - Local archive with configurable retention and in-app deletion
 - No account, analytics, advertising or API keys
 - Accessibility labels and Reduce Motion support

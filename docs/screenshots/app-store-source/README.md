@@ -1,0 +1,7 @@
+# Sorgenti schermate App Store
+
+Cinque PNG native da **1320×2868 px**, iPhone 18 Pro Max dedicato “A56 UI Large”, iOS 27.2. Italiano, aspetto chiaro, testo di sistema predefinito, status bar 09:41 e batteria 100% in scarica. Nessun artwork o ritocco. I quattro file `fixture-*` sono stati ricatturati il 15 novembre 2026 dopo la finitura visiva finale: superfici neutre, nessuna barra laterale decorativa o bordo accento, schema stradale più nitido. `info-privacy.png` conserva la cattura originale delle 14:44 perché il contenuto non è stato modificato. Timestamp individuali e SHA-256 sono nel manifest.
+
+**Gli avvisi delle schermate `fixture-*` sono dimostrativi (`--sample-data`), non viabilità live.** La schermata `fixture-avvisi-mapkit-percorso.png` combina un itinerario realmente calcolato da MapKit con avvisi dimostrativi. I tile cartografici sono stati scaricati e verificati visivamente. `info-privacy.png` contiene informazioni statiche dell’app, incluse le indicazioni aggiornate sui widget.
+
+L’ora 09:41 della status bar è un override cosmetico: gli orari di aggiornamento nell’app riportano l’ora effettiva della sessione (programmate/dettaglio/confronto acquisiti alle 15:12–15:13; mappa ricatturata alle 15:20 dopo verifica dell’anchor MapKit). Il file `manifest.json` registra provenienza, timestamp, versione, dimensioni e SHA-256 di ogni sorgente. Queste immagini non sono state caricate su App Store Connect. La centrale deve rigenerare l’artwork Store dalle nuove sorgenti; la vecchia anteprima non rappresenta la finitura finale.

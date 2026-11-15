@@ -1,0 +1,8 @@
+{
+  "Views/TripView.swift": "35de403c7375a8d3a0410f5d698ce6e3454cb055e18b5c67a24e072e89fa1132",
+  "Views/OverviewMapView.swift": "821f662ae3a8c2801deb88a00d1152ccd5a88090d5983acbc20b421030a1bdbd",
+  "Views/ClosureDetailView.swift": "6788e1ef08075b4f39627d243ee8cc53d18684982fd805ff58bca6b2bcf4be99",
+  "Views/Components/RoadBlockCard.swift": "7c4e85376babffec0498f70ac52c4d3844de0e5e618c62c978f10c29c9920f3a",
+  "Data/A56RouteGeometry.swift": "4fabe77328898e9379b6999fa859269b407bdb166ece804bec1decc31da3d217",
+  "ViewModels/TripPlanner.swift": "2fd54f5caf4a77f8a15ca8358852504a3dd184f7238fea223d93e05d57514688"
+}

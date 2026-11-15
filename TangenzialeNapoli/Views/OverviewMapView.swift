@@ -118,7 +118,11 @@ struct OverviewMapView: View {
             }
 
             ForEach(referenceExits) { exit in
-                Annotation(exit.shortLabel, coordinate: coordinate(for: exit), anchor: .center) {
+                Annotation(
+                    exit.shortLabel,
+                    coordinate: coordinate(for: exit),
+                    anchor: UnitPoint(x: 0.5, y: 0.5 - exitMarkerVerticalOffset(exit) / 48)
+                ) {
                     Button {
                         withAnimation(reduceMotion ? nil : .snappy) {
                             selectedExitNumber = exit.number
@@ -219,6 +223,7 @@ struct OverviewMapView: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
                         .background(.thinMaterial, in: Capsule())
+                        .frame(minHeight: 44)
                         .contentShape(Capsule())
                 }
                 .accessibilityLabel("Attribuzione dei dati OpenStreetMap")
@@ -472,7 +477,7 @@ struct OverviewMapView: View {
                         Circle()
                             .strokeBorder(Color.a56GlassBorder.opacity(0.45), lineWidth: 0.5)
                     }
-                    .shadow(color: Color.a56Open.opacity(0.13), radius: 5, y: 2)
+                    .shadow(color: Color.a56Shadow.opacity(0.10), radius: 5, y: 2)
 
                 Image(systemName: "viewfinder")
                     .font(.system(size: 18, weight: .semibold))
@@ -500,7 +505,7 @@ struct OverviewMapView: View {
                         Circle()
                             .strokeBorder(Color.a56GlassBorder.opacity(0.45), lineWidth: 0.5)
                     }
-                    .shadow(color: Color.a56Open.opacity(0.13), radius: 5, y: 2)
+                    .shadow(color: Color.a56Shadow.opacity(0.10), radius: 5, y: 2)
 
                 Image(systemName: isLegendPresented ? "xmark" : "list.bullet")
                     .font(.system(size: 18, weight: .semibold))
@@ -522,11 +527,7 @@ struct OverviewMapView: View {
     }
 
     private func coordinates(for closure: RoadClosure) -> [CLLocationCoordinate2D] {
-        A56RouteGeometry.segment(
-            from: closure.lowerExit,
-            to: closure.upperExit,
-            direction: direction
-        )
+        A56RouteGeometry.closureSegment(for: closure, direction: direction)
     }
 
     private func coordinate(for exit: A56Exit) -> CLLocationCoordinate2D {
@@ -543,16 +544,16 @@ struct OverviewMapView: View {
                 Capsule()
                     .fill(color.opacity(0.85))
                     .frame(width: 1.5, height: abs(offset))
-                    .offset(y: offset / 2)
+                    .offset(y: -offset / 2)
 
                 Circle()
                     .fill(color)
                     .frame(width: 5, height: 5)
                     .overlay { Circle().strokeBorder(.a56MarkerBorder, lineWidth: 1) }
+                    .offset(y: -offset)
             }
 
             exitMarker(exit)
-                .offset(y: offset)
 
             if !isOverviewZoom, let rampStatus {
                 rampStatusBadge(rampStatus)
@@ -560,14 +561,18 @@ struct OverviewMapView: View {
             }
         }
         .frame(width: 48, height: 48)
+        .contentShape(Rectangle())
     }
 
     private func exitMarker(_ exit: A56Exit) -> some View {
-        let diameter: CGFloat = isOverviewZoom ? markerDiameter * 0.8 : markerDiameter
+        // Overview symbols are geographic markers, not a text list. Keep them
+        // compact when AX text reduces the map's usable height; full exit names
+        // and status remain scalable in the tray and in the accessible label.
+        let diameter: CGFloat = isOverviewZoom ? min(markerDiameter, 24) * 0.8 : markerDiameter
         let highlightsProblem = exitHasProblem(exit)
         return Text(exit.markerLabel)
             .font(.system(
-                size: isOverviewZoom ? markerFontSize * 0.85 : markerFontSize,
+                size: isOverviewZoom ? min(markerFontSize, 12) * 0.85 : markerFontSize,
                 weight: .bold,
                 design: .rounded
             ))
@@ -586,11 +591,7 @@ struct OverviewMapView: View {
             .overlay {
                 Capsule().strokeBorder(Color.a56MarkerBorder.opacity(0.9), lineWidth: 1)
             }
-            .shadow(
-                color: (highlightsProblem ? Color.a56Block : routeOpenColor).opacity(0.4),
-                radius: highlightsProblem ? 5 : 3,
-                y: 1
-            )
+            .shadow(color: Color.a56Shadow.opacity(0.16), radius: 1.5, y: 1)
     }
 
     private func exitHasProblem(_ exit: A56Exit) -> Bool {
@@ -652,7 +653,7 @@ struct OverviewMapView: View {
         .fixedSize()
         .background(Color.a56Block, in: Capsule())
         .overlay { Capsule().strokeBorder(.a56MarkerBorder, lineWidth: 2) }
-        .shadow(color: Color.a56Block.opacity(0.4), radius: 5, y: 2)
+        .shadow(color: Color.a56Shadow.opacity(0.16), radius: 2, y: 1)
     }
 
     private func exitMarkerVerticalOffset(_ exit: A56Exit) -> CGFloat {
@@ -680,7 +681,7 @@ struct OverviewMapView: View {
                         Label("Filtri mappa", systemImage: "line.3.horizontal.decrease.circle")
                         Text("\(direction.shortName) · \(scope.label)")
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.secondary)
                     }
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 }
@@ -715,13 +716,13 @@ struct OverviewMapView: View {
         filterControls
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(Color.a56GlassBorder.opacity(0.48), lineWidth: 0.6)
         }
-        .shadow(color: Color.a56Open.opacity(0.10), radius: 14, y: 6)
+        .shadow(color: Color.a56Shadow.opacity(0.10), radius: 10, y: 4)
         .animation(reduceMotion ? nil : .snappy, value: scope)
     }
 
@@ -734,7 +735,7 @@ struct OverviewMapView: View {
             }
         }
         .padding(4)
-        .background(Color.a56ControlFill, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.a56ControlFill, in: RoundedRectangle(cornerRadius: 13))
     }
 
     private func scopeSegment(_ candidate: Scope) -> some View {
@@ -744,14 +745,14 @@ struct OverviewMapView: View {
         } label: {
             Text(candidate.label)
                 .font(.subheadline.weight(.bold))
-                .foregroundStyle(isSelected ? .primary : .secondary)
+                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
+                .frame(minHeight: 44)
                 .background {
                     if isSelected {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.a56Selection.opacity(0.88))
-                            .shadow(color: Color.a56Open.opacity(0.09), radius: 4, y: 2)
+                        RoundedRectangle(cornerRadius: 9)
+                            .fill(Color.a56Selection)
                     }
                 }
                 .contentShape(RoundedRectangle(cornerRadius: 12))
@@ -841,7 +842,7 @@ struct OverviewMapView: View {
             .foregroundStyle(.a56Caution)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .background(Color.a56Caution.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
@@ -919,7 +920,7 @@ struct OverviewMapView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(scheduledDayTitle(window.start))
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.secondary)
                 HStack(spacing: 5) {
                     Text(scheduledTimeSummary(window))
                         .font(.subheadline.monospacedDigit().weight(.bold))
@@ -946,11 +947,6 @@ struct OverviewMapView: View {
                         lineWidth: 0.75
                     )
             }
-            .shadow(
-                color: isSelected ? Color.a56Shadow.opacity(0.07) : .clear,
-                radius: 2,
-                y: 1
-            )
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(A56PressButtonStyle())
@@ -966,8 +962,16 @@ struct OverviewMapView: View {
     @ViewBuilder
     private var bottomPanel: some View {
         if let selectedExit {
-            selectedExitTray(selectedExit)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView {
+                    selectedExitTray(selectedExit)
+                }
+                .frame(height: max(180, mapViewportSize.height * 0.60))
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            } else {
+                selectedExitTray(selectedExit)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
     }
 
@@ -1034,9 +1038,11 @@ struct OverviewMapView: View {
                     Text(exit.isEntranceOnly ? "Solo ingresso · Entrambe le direzioni" : exit.kindLabel)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(exit.name)
                         .font(.subheadline.weight(.semibold))
-                        .lineLimit(2)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 0)
@@ -1048,6 +1054,7 @@ struct OverviewMapView: View {
                     // the only way to dismiss the tray.
                     Image(systemName: "xmark.circle.fill")
                         .font(.title3)
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .foregroundStyle(.secondary)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
@@ -1065,6 +1072,7 @@ struct OverviewMapView: View {
                 )
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.a56Caution)
+                .fixedSize(horizontal: false, vertical: true)
             }
 
             if problems.isEmpty {
@@ -1075,6 +1083,7 @@ struct OverviewMapView: View {
                     )
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.a56Open)
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             } else {
                 ScrollView(.horizontal) {
@@ -1096,7 +1105,7 @@ struct OverviewMapView: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .strokeBorder(Color.a56GlassBorder.opacity(0.5), lineWidth: 0.6)
         }
-        .shadow(color: Color.a56Open.opacity(0.12), radius: 12, y: 5)
+        .shadow(color: Color.a56Shadow.opacity(0.10), radius: 12, y: 5)
     }
 
     private func problems(at exit: A56Exit) -> [RoadClosure] {

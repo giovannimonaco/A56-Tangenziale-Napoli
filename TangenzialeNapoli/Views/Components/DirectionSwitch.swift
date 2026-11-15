@@ -22,7 +22,7 @@ struct DirectionSwitch: View {
             }
         }
         .padding(4)
-        .background(Color.a56ControlFill, in: RoundedRectangle(cornerRadius: 17))
+        .background(Color.a56ControlFill, in: RoundedRectangle(cornerRadius: 14))
         .accessibilityElement(children: .contain)
         .sensoryFeedback(.selection, trigger: selection)
     }
@@ -53,7 +53,7 @@ struct DirectionSwitch: View {
                         Image(systemName: direction.systemImage)
                     }
                 }
-                .font(.subheadline.weight(.bold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(isOn ? .primary : .secondary)
 
                 if let directionStatus {
@@ -65,7 +65,7 @@ struct DirectionSwitch: View {
                     }
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                     .minimumScaleFactor(0.72)
-                    .font(.caption2.weight(.semibold))
+                    .font(.caption2.weight(.medium))
                     .foregroundStyle(directionStatus.color)
                 }
             }
@@ -75,16 +75,15 @@ struct DirectionSwitch: View {
             .frame(minHeight: directionStatus == nil ? 44 : 58)
             .background {
                  if isOn {
-                     RoundedRectangle(cornerRadius: 13, style: .continuous)
-                         .fill(Color.a56Selection.opacity(0.88))
+                     RoundedRectangle(cornerRadius: 10, style: .continuous)
+                         .fill(Color.a56Selection)
                          .overlay {
-                             RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                 .strokeBorder(Color.a56Open.opacity(0.18), lineWidth: 0.75)
+                             RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                 .strokeBorder(Color.primary.opacity(0.18), lineWidth: 0.75)
                          }
-                         .shadow(color: Color.a56Open.opacity(0.09), radius: 4, y: 2)
                  }
              }
-            .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(A56PressButtonStyle())
         .accessibilityLabel(
