@@ -15,7 +15,7 @@
             <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
             <key>NSPrivacyAccessedAPITypeReasons</key>
             <array>
-                <!-- App-local preferences and saved destinations; no shared App Group. -->
+                <!-- UserDefaults is process-local; shared notices use App Group files. -->
                 <string>CA92.1</string>
             </array>
         </dict>

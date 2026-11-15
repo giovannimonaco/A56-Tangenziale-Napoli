@@ -64,3 +64,7 @@ bash Tests/audit-live-feed.sh --snapshots /tmp/a56-feed-audit/planned.json /tmp/
 - `bash -n Tests/audit-live-feed.sh` e `git diff --check`: **PASS**.
 
 API e correzioni feed/modello/archivio sono pronte. Restano alla centrale l'inclusione del file nel widget e l'uso del nuovo helper in UI; poi si può ripetere `bash Tests/test-xcode.sh`. Nessun commit, push, upload o raw feed nel repository. I simulatori usati da questa chat sono dedicati; nessuna interazione con Orya/Audiva.
+
+## Chiusura integrazione centrale
+
+Il target widget include ora `A56RouteGeometry.swift`. L’integrazione finale ha superato 90 test iOS e i controlli standalone, compresa la geometria dei collegamenti. La mappa, i nomi dei capi fisici e gli avvisi sui percorsi sono stati verificati nel [report UI finale](final-integration-ui.md). Lo stato globale sui feed reali è completo: 48/48 avvisi futuri. Le divergenze negli orari della fonte restano segnalate sui singoli avvisi.

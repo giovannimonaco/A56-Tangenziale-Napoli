@@ -78,7 +78,7 @@ Su macOS, esegui `Tests/check-a56.sh` per verificare il mapping delle chiusure, 
 
 `Tests/test-xcode.sh` esegue anche la suite Swift Testing su un iPhone simulato isolato. Per i test UI permanenti usa `A56_TEST_SCHEME=A56UI bash Tests/test-xcode.sh`. Istruzioni e limiti delle verifiche sono in [Tests/README.md](Tests/README.md).
 
-I widget usano gli stessi controlli di qualità dei feed dell’app e una cache separata. Possono aggiornarsi senza un precedente avvio dell’app, ma non offrono un monitoraggio continuo: mostrano sempre l’ora dell’ultimo controllo e indicano i dati da aggiornare dopo cinque minuti. Il tap apre il tab Chiusure.
+App e widget condividono sul dispositivo gli ultimi avvisi attivi e futuri. Quando l’app aggiorna i dati li pubblica per il widget e richiede il ridisegno. I widget possono anche aggiornarsi autonomamente senza un precedente avvio dell’app; iOS determina quando eseguire il refresh. Mostrano sempre l’ora dell’ultimo controllo e indicano i dati da aggiornare dopo cinque minuti. Il tap apre il tab Chiusure.
 
 ## Privacy e sicurezza
 

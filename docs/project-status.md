@@ -13,21 +13,17 @@ Aggiornato il 15 novembre 2026. L'utente comunica nella sola chat centrale; asse
 
 ## Risultati verificati
 
-- Test Swift Testing integrati in Xcode, schema condiviso e workflow CI; prima verifica finale: 42 test / 76 esecuzioni parametrizzate, tutti superati. Vedere [report test](testing-report.md).
-- Quattro test UI permanenti nello schema separato `A56UI`, tutti passati su simulatore tramite lo script usato dalla CI. Due tentativi su iPhone fisico si sono fermati durante l'abilitazione dell'automazione, prima dei test.
-- Widget small/medium: rete del processo WidgetKit provata prima del primo avvio dell'app, cache autonoma, stati offline e scadenza, tap reale verso Chiusure. Vedere [verifica widget](widget-verification.md).
-- Audit su iPhone piccolo/grande, testo Accessibilità, chiaro/scuro, contrasti, posizione negata e MapKit: [audit UI](ui-ux-audit.md). La finitura visiva successiva ha verifiche proprie.
-- Primo archivio Release firmato ed export App Store riusciti per app ed estensione, entrambi iPhone e iOS 18+. Sono artefatti iniziali 1.0 (1), da sostituire con l'archivio finale 1.0 (7).
-- App Store Connect: app `6782002695`, bozza 1.0 `PREPARE_FOR_SUBMISSION`, nome A56 Napoli, lingua principale italiana, categoria Navigation, rilascio manuale. Testi e URL confrontati con i file locali. Questionario età compilato sul contenuto dell'app; risultato Apple 4+.
-- Policy e assistenza aggiornate pubblicate e confrontate senza autenticazione con i file locali. Commit `ed94708`, ramo `review/general-audit`.
-- Otto immagini Store in due formati, con avvisi dimostrativi esplicitamente dichiarati; saranno rigenerate sulla finitura finale. [Anteprima](../AppStore/Preview-it.png).
+- Corrette completezza feed **48/48**, classificazione ingressi/uscite e geometria dei collegamenti. La UI indica i capi fisici e impedisce raccomandazioni di alternative attraversate da chiusure. [Feed](feed-completeness-fix.md), [percorsi](route-boundary-fix.md), [integrazione UI](final-integration-ui.md).
+- **90 test iOS in 9 suite** e controlli standalone passati. Quattro smoke test UI e prove mirate passati prima dell’ultima sincronizzazione; riesecuzione finale in corso. Due tentativi di UI automation sul telefono si sono fermati prima dei test durante l’abilitazione del servizio.
+- Widget autonomi, small/medium, cache/offline e scadenza. Ora sincronizzazione App Group e richiesta di reload dopo ogni refresh riuscito dell’app: **48 avvisi identici su iPhone firmato**, cache private obsolete rimosse. [Report finale](widget-sync-fix.md).
+- UI iPhone piccolo/grande, chiaro/scuro, testo Accessibilità massimo e bersagli verificati, finitura senza barre decorative. [Audit](ui-ux-audit.md), [finitura](visual-design-review.md).
+- Build **1.0 (8)** installata e avviata sul telefono, archivio Release riuscito. Export finale in verifica; precedente archivio/IPA 7 verificati. App ed estensione iPhone e iOS 18+, entrambi abilitati al medesimo App Group.
+- Bozza App Store `6782002695`, 1.0 `PREPARE_FOR_SUBMISSION`, nome A56 Napoli, lingua it, Navigation, rilascio manuale, questionario età 4+. Otto screenshot finali caricati e collocati nella bozza. [Anteprima](../AppStore/Preview-it.png).
+- Policy e assistenza pubblicate nel ramo collegato; nuova policy aggiornata per la condivisione locale widget pronta nel checkout. Nessun nuovo binario caricato e nessuna revisione inviata.
 
 ## Lavori ancora attivi
 
-1. [Ingressi, uscite e collegamenti nei percorsi](route-boundary-fix.md): distinguere svincoli, prosecuzioni della strada e punti già sulla carreggiata; verificare falsi allineamenti e istruzioni reali di MapKit.
-2. [Completezza feed](feed-completeness-fix.md): correggere la singola occorrenza che produce 47/48 e lo stato globale incompleto sui dati attuali, conservando i controlli per problemi reali della fonte.
-3. [Finitura visiva](visual-design-review.md): verificare e catturare la UI finale senza barre decorative, preservando le correzioni di accessibilità.
-4. Convergere sul codice finale, rieseguire i controlli pertinenti, produrre archivio/export 1.0 (7), aggiornare screenshot e documentazione, commit/push e verifica CI remota.
+Export/firma finale 8, riesecuzione smoke UI, commit/push e conferma CI remota. La prima esecuzione remota ha passato la UI e rilevato una diversa gestione di NaN nell’SDK del runner; correzione esplicita verificata nella suite locale completa. Nessun fallimento viene ignorato o test saltato.
 
 ## Pubblicazione e decisioni esterne
 

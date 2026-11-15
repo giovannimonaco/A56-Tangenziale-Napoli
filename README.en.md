@@ -20,6 +20,7 @@ The app turns the operator's public traffic feeds into a clear view of closed ca
 - Detailed closure cards with time window, cause and affected interchanges
 - Saved notices available offline and clearly marked for verification
 - Small and medium widgets with independent online requests, data timestamps and freshness warnings; iOS determines the actual refresh frequency
+- Shared current/future notices between app and widgets; successful app updates request a widget reload
 - Local archive with configurable retention and in-app deletion
 - No account, analytics, advertising or API keys
 - Accessibility labels and Reduce Motion support

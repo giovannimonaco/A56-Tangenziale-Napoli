@@ -6,6 +6,8 @@ struct AppTabView: View {
         case closures, map, trips
     }
 
+    private let synchronizesWidgets: Bool
+
     private static let lastTabKey = "lastSelectedTab"
 
     /// Last selected tab, so the app reopens where it was left.
@@ -26,6 +28,10 @@ struct AppTabView: View {
 
     init(viewModel: ClosuresViewModel? = nil) {
 #if DEBUG
+        let fixtureFlags = ["--sample-data", "--stale-sample-data", "--unavailable-data"]
+        synchronizesWidgets = viewModel == nil
+            && !CommandLine.arguments.contains(where: fixtureFlags.contains)
+            && ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1"
         let initialViewModel: ClosuresViewModel
         if let viewModel {
             initialViewModel = viewModel
@@ -45,6 +51,7 @@ struct AppTabView: View {
                 : Self.storedTab
         )
 #else
+        synchronizesWidgets = viewModel == nil
         _viewModel = State(initialValue: viewModel ?? ClosuresViewModel())
         _selectedTab = State(initialValue: Self.storedTab)
 #endif
@@ -125,6 +132,19 @@ struct AppTabView: View {
             if phase == .active {
                 Task { await refreshOnTimer() }
             }
+        }
+        .onChange(of: viewModel.lastLoadedAt) { _, loadedAt in
+            // Covers first load, foreground/timer and every manual refresh in
+            // child views. Capture the finished result before starting a Task.
+            guard synchronizesWidgets, let loadedAt,
+                  case .live(let fetchedAt, let quality) = viewModel.dataSource,
+                  fetchedAt == loadedAt else { return }
+            let snapshot = WidgetSnapshot(
+                fetchedAt: fetchedAt, closures: viewModel.closures,
+                isComplete: quality.isFullyVerified,
+                requestStartedAt: viewModel.lastRequestStartedAt
+            )
+            Task { await WidgetSnapshotStore.shared.publishFromApp(snapshot) }
         }
         .onChange(of: selectedTab) { _, tab in
             UserDefaults.standard.set(tab.rawValue, forKey: Self.lastTabKey)

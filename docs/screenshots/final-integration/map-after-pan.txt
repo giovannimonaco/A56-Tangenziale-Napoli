@@ -1,0 +1,137 @@
+Attributes: Application, 0x10aa81680, pid: 12909, label: 'IntegrationHarness'
+Element subtree:
+ →Application, 0x10aa81680, pid: 12909, label: 'IntegrationHarness'
+    Window (Main), 0x10aa817c0, {{0.0, 0.0}, {402.0, 874.0}}
+      Other, 0x10aa81900, {{0.0, 0.0}, {402.0, 874.0}}
+        Other, 0x10aa81a40, {{0.0, 0.0}, {402.0, 874.0}}
+          Other, 0x10aa81b80, {{0.0, 0.0}, {402.0, 874.0}}
+            Other, 0x10aa81cc0, {{0.0, 0.0}, {402.0, 874.0}}
+              Other, 0x10aa81e00, {{0.0, 0.0}, {402.0, 874.0}}
+                NavigationBar, 0x10aa81f40, {{0.0, 62.0}, {402.0, 54.0}}, identifier: 'Mappa A56'
+                  Other, 0x10aa82080, {{20.0, 66.0}, {36.0, 36.0}}
+                    Other, 0x10aa821c0, {{20.0, 66.0}, {36.0, 36.0}}
+                      Button, 0x10aa82300, {{24.7, 66.0}, {27.0, 36.0}}, identifier: 'arrow.clockwise', label: 'Aggiorna dati'
+                  StaticText, 0x10aa82440, {{155.3, 73.7}, {91.3, 20.7}}, label: 'Mappa A56'
+                Other, 0x10aa82580, {{0.0, 0.0}, {402.0, 874.0}}
+                  Other, 0x10aa826c0, {{0.0, 0.0}, {402.0, 874.0}}
+                    Other, 0x10aa82800, {{0.0, 0.0}, {402.0, 874.0}}
+                      Other, 0x10aa82940, {{0.0, 0.0}, {402.0, 874.0}}
+                        Other, 0x10aa82a80, {{0.0, 116.0}, {402.0, 724.0}}
+                          Other, 0x10aa82bc0, {{0.0, 0.0}, {402.0, 874.0}}
+                            Map, 0x10aa82d00, {{0.0, 0.0}, {402.0, 874.0}}, value: {"camera":{"altitu...
+                              Other, 0x10aa82e40, {{221.2, 48.3}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Capua'
+                              Other, 0x10aa82f80, {{65.2, 75.6}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Grazzanise'
+                              Other, 0x10aa830c0, {{284.5, 99.6}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Santa Maria Capua Vetere'
+                              Other, 0x10aa83200, {{383.5, 104.3}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Caserta'
+                              Other, 0x10aa83340, {{338.0, 174.4}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Marcianise'
+                              Other, 0x10aa83480, {{97.2, 227.6}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Casal di Principe'
+                              Other, 0x10aa835c0, {{213.0, 251.7}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Teverola'
+                              Other, 0x10aa83700, {{213.0, 273.6}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Aversa'
+                              Other, 0x10aa83840, {{202.0, 368.6}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Giugliano in Campania'
+                              Other, 0x10aa83980, {{325.4, 409.9}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Casoria'
+                              Other, 0x10aa83ac0, {{320.9, 466.6}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '1 · Capodichino'
+                              Other, 0x10aa83c00, {{319.1, 467.6}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '2 · Secondigliano'
+                              Other, 0x10aa83d40, {{310.6, 469.7}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '3 · Doganella'
+                              Other, 0x10aa83e80, {{296.0, 475.5}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '4 · Corso Malta'
+                              Other, 0x10a0292c0, {{262.7, 479.5}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '5 · Capodimonte'
+                              Other, 0x10a02a580, {{251.9, 486.6}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '6 · Arenella'
+                              Other, 0x10a02a440, {{247.9, 488.5}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '7 · Zona Ospedaliera'
+                              Other, 0x10a02b700, {{227.7, 502.6}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '8 · Camaldoli'
+                              Other, 0x10a029e00, {{224.3, 516.6}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '9 · Vomero'
+                              Other, 0x10a02af80, {{57.2, 525.2}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '13 · Cuma'
+                              Other, 0x10a02a080, {{51.2, 528.9}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '14 · Arco Felice'
+                              Other, 0x10a028f00, {{86.1, 529.1}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '12 · Via Campana'
+                              Other, 0x10a029900, {{149.6, 530.5}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '11 · Agnano'
+                              Other, 0x10a02aa80, {{200.8, 533.8}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: '10 · Fuorigrotta'
+                              Other, 0x10a02b340, {{174.2, 534.7}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Ingresso Italia ’90'
+                              Other, 0x10a02be80, {{52.0, 639.1}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Capo Miseno'
+                              Other, 0x10a028140, {{267.2, 755.0}, {30.0, 30.0}}, identifier: 'VKPointFeature', label: 'Golfo di Napoli'
+                            Other, 0x10a029b80, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'AnnotationContainer'
+                              Other, 0x10a02a300, {{310.0, 458.3}, {48.0, 48.0}}, label: '2 · Secondigliano'
+                                Other, 0x10a02a940, {{310.0, 458.3}, {48.0, 48.0}}
+                                  Other, 0x10a02b840, {{310.0, 458.3}, {48.0, 48.0}}
+                                    Button, 0x10a02a1c0, {{310.0, 458.3}, {48.0, 48.0}}, label: 'Uscita 2 · Secondigliano', value: Tratto chiuso
+                              Other, 0x10a02bd40, {{287.0, 458.3}, {48.0, 48.0}}, label: '4 · Corso Malta'
+                                Other, 0x10a02b980, {{287.0, 458.3}, {48.0, 48.0}}
+                                  Other, 0x10a02b480, {{287.0, 458.3}, {48.0, 48.0}}
+                                    Button, 0x10a02b5c0, {{287.0, 458.3}, {48.0, 48.0}}, label: 'Uscita 4 · Corso Malta / Centro Direzionale / Stazione / Porto', value: Nessuna chiusura s...
+                              Other, 0x10a02a800, {{301.3, 474.3}, {48.0, 48.0}}, label: '3 · Doganella'
+                                Other, 0x10a02abc0, {{301.3, 474.3}, {48.0, 48.0}}
+                                  Other, 0x10a029180, {{301.3, 474.3}, {48.0, 48.0}}
+                                    Button, 0x10a029040, {{301.3, 474.3}, {48.0, 48.0}}, label: 'Uscita 3 · Doganella / Piazza Carlo III / Centro storico', value: Nessuna chiusura s...
+                              Other, 0x10a02ae40, {{242.7, 465.3}, {48.0, 48.0}}, label: '6 · Arenella'
+                                Other, 0x10a02a6c0, {{242.7, 465.3}, {48.0, 48.0}}
+                                  Other, 0x10a028640, {{242.7, 465.3}, {48.0, 48.0}}
+                                    Button, 0x1133e8000, {{242.7, 465.3}, {48.0, 48.0}}, label: 'Uscita 6 · Arenella / Centro storico / Quartieri Spagnoli', value: Nessuna chiusura s...
+                              Other, 0x1133e8140, {{253.7, 482.3}, {48.0, 48.0}}, label: '5 · Capodimonte'
+                                Other, 0x1133e8280, {{253.7, 482.3}, {48.0, 48.0}}
+                                  Other, 0x1133e83c0, {{253.7, 482.3}, {48.0, 48.0}}
+                                    Button, 0x1133e8500, {{253.7, 482.3}, {48.0, 48.0}}, label: 'Uscita 5 · Capodimonte / Rione Sanità', value: Nessuna chiusura s...
+                              Other, 0x1133e8640, {{311.7, 441.3}, {48.0, 48.0}}, label: '1 · Capodichino'
+                                Other, 0x1133e8780, {{311.7, 441.3}, {48.0, 48.0}}
+                                  Other, 0x1133e88c0, {{311.7, 441.3}, {48.0, 48.0}}
+                                    Button, 0x1133e8a00, {{311.7, 441.3}, {48.0, 48.0}}, label: 'Uscita 1 · Capodichino / Aeroporto', value: Tratto chiuso
+                              Other, 0x1133e8b40, {{48.0, 504.0}, {48.0, 48.0}}, label: '13 · Cuma'
+                                Other, 0x1133e8c80, {{48.0, 504.0}, {48.0, 48.0}}
+                                  Other, 0x1133e8dc0, {{48.0, 504.0}, {48.0, 48.0}}
+                                    Button, 0x1133e8f00, {{48.0, 504.0}, {48.0, 48.0}}, label: 'Uscita 13 · Cuma', value: Nessuna chiusura s...
+                              Other, 0x1133e9040, {{165.0, 537.3}, {48.0, 48.0}}, label: 'Ingresso Italia ’90'
+                                Other, 0x1133e9180, {{165.0, 537.3}, {48.0, 48.0}}
+                                  Other, 0x1133e92c0, {{165.0, 537.3}, {48.0, 48.0}}
+                                    Button, 0x1133e9400, {{165.0, 537.3}, {48.0, 48.0}}, label: 'Italia ’90, solo ingresso in entrambe le direzioni', value: Nessuna chiusura s...
+                              Other, 0x1133e9540, {{238.7, 491.3}, {48.0, 48.0}}, label: '7 · Zona Ospedaliera'
+                                Other, 0x1133e9680, {{238.7, 491.3}, {48.0, 48.0}}
+                                  Other, 0x1133e97c0, {{238.7, 491.3}, {48.0, 48.0}}
+                                    Button, 0x1133e9900, {{238.7, 491.3}, {48.0, 48.0}}, label: 'Uscita 7 · Zona Ospedaliera', value: Nessuna chiusura s...
+                              Other, 0x1133e9a40, {{218.7, 481.3}, {48.0, 48.0}}, label: '8 · Camaldoli'
+                                Other, 0x1133e9b80, {{218.7, 481.3}, {48.0, 48.0}}
+                                  Other, 0x1133e9cc0, {{218.7, 481.3}, {48.0, 48.0}}
+                                    Button, 0x1133e9e00, {{218.7, 481.3}, {48.0, 48.0}}, label: 'Uscita 8 · Camaldoli', value: Nessuna chiusura s...
+                              Other, 0x1133e9f40, {{191.7, 512.7}, {48.0, 48.0}}, label: '10 · Fuorigrotta'
+                                Other, 0x1133ea080, {{191.7, 512.7}, {48.0, 48.0}}
+                                  Other, 0x1133ea1c0, {{191.7, 512.7}, {48.0, 48.0}}
+                                    Button, 0x1133ea300, {{191.7, 512.7}, {48.0, 48.0}}, label: 'Uscita 10 · Fuorigrotta / Stadio / Edenlandia', value: Nessuna chiusura s...
+                              Other, 0x1133ea440, {{140.3, 509.3}, {48.0, 48.0}}, label: '11 · Agnano'
+                                Other, 0x1133ea580, {{140.3, 509.3}, {48.0, 48.0}}
+                                  Other, 0x1133ea6c0, {{140.3, 509.3}, {48.0, 48.0}}
+                                    Button, 0x1133ea800, {{140.3, 509.3}, {48.0, 48.0}}, label: 'Uscita 11 · Agnano / Ippodromo / Edenlandia', value: Nessuna chiusura s...
+                              Other, 0x1133ea940, {{42.0, 531.7}, {48.0, 48.0}}, label: '14 · Arco Felice'
+                                Other, 0x1133eaa80, {{42.0, 531.7}, {48.0, 48.0}}
+                                  Other, 0x1133eabc0, {{42.0, 531.7}, {48.0, 48.0}}
+                                    Button, 0x1133ead00, {{42.0, 531.7}, {48.0, 48.0}}, label: 'Uscita 14 · Arco Felice / Pozzuoli / Bacoli', value: Nessuna chiusura s...
+                              Other, 0x1133eae40, {{215.3, 519.3}, {48.0, 48.0}}, label: '9 · Vomero'
+                                Other, 0x1133eaf80, {{215.3, 519.3}, {48.0, 48.0}}
+                                  Other, 0x1133eb0c0, {{215.3, 519.3}, {48.0, 48.0}}
+                                    Button, 0x1133eb200, {{215.3, 519.3}, {48.0, 48.0}}, label: 'Uscita 9 · Vomero / Posillipo', value: Nessuna chiusura s...
+                              Other, 0x1133eb340, {{77.0, 532.0}, {48.0, 48.0}}, label: '12 · Via Campana'
+                                Other, 0x1133eb480, {{77.0, 532.0}, {48.0, 48.0}}
+                                  Other, 0x1133eb5c0, {{77.0, 532.0}, {48.0, 48.0}}
+                                    Button, 0x1133eb700, {{77.0, 532.0}, {48.0, 48.0}}, label: 'Uscita 12 · Via Campana / Pozzuoli', value: Nessuna chiusura s...
+                          Link, 0x1133eb840, {{70.2, 819.3}, {28.6, 10.7}}, label: 'Legal'
+                        Other, 0x1133eb980, {{24.0, 136.0}, {354.0, 66.0}}
+                          Button, 0x1133ebac0, {{28.0, 140.0}, {171.0, 58.0}}, label: 'Verso Pozzuoli, 1 tratto', Selected
+                            Image, 0x1133ebc00, {{41.0, 154.0}, {14.3, 11.7}}, identifier: 'arrow.left', label: 'Left'
+                            StaticText, 0x1133ebd40, {{62.3, 152.2}, {52.3, 15.3}}, label: 'Pozzuoli'
+                            StaticText, 0x1133ebe80, {{51.0, 172.5}, {38.7, 13.3}}, label: '1 tratto'
+                          Button, 0x1133f0000, {{203.0, 140.0}, {171.0, 58.0}}, label: 'Verso Capodichino, Nessuna chiusura segnalata'
+                            StaticText, 0x1133f0140, {{250.0, 151.7}, {89.7, 18.0}}, label: 'Capodichino'
+                            Image, 0x1133f0280, {{346.7, 155.0}, {14.3, 11.7}}, identifier: 'arrow.right', label: 'Right'
+                            StaticText, 0x1133f03c0, {{227.3, 174.7}, {135.7, 11.7}}, label: 'Nessuna chiusura segnalata'
+                        Button, 0x1133f0500, {{28.0, 216.0}, {171.0, 44.0}}, label: 'Adesso', Selected
+                        Button, 0x1133f0640, {{203.0, 216.0}, {171.0, 44.0}}, label: 'Programmate'
+                        StaticText, 0x1133f0780, {{28.7, 274.8}, {136.3, 13.3}}, label: 'Aggiornato alle 15:36', Selected
+                          Image, 0x1133f08c0, {{28.7, 275.0}, {13.0, 13.0}}, identifier: 'checkmark.seal.fill', label: 'Verified', Selected
+                          StaticText, 0x1133f0a00, {{48.3, 274.8}, {116.7, 13.3}}, label: 'Aggiornato alle 15:36'
+                        Button, 0x1133f0b40, {{10.0, 309.0}, {56.0, 56.0}}, identifier: 'list.bullet', label: 'Apri legenda'
+                        Other, 0x1133f0c80, {{364.0, 337.0}, {0.0, 0.0}}
+                          Button, 0x1133f0dc0, {{364.0, 337.0}, {0.0, 0.0}}, label: 'Compass', value: Heading: 360 degre...
+                        Link, 0x1133f0f00, {{278.0, 790.0}, {114.0, 44.0}}, label: 'Attribuzione dei dati OpenStreetMap'
+                Toolbar, 0x1133f1040, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar'
+                  Other, 0x1133f1180, {{0.0, 0.0}, {402.0, 874.0}}
+Path to element:
+ →Application, 0x10aa81680, pid: 12909, label: 'IntegrationHarness'
+Query chain:
+ →Find: Target Application 'com.a56.final.integration'
+  Output: {
+    Application, 0x1133f12c0, pid: 12909, label: 'IntegrationHarness'
+  }

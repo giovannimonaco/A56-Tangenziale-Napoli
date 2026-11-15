@@ -119,3 +119,7 @@ Official pair (40.877,14.28987) / (40.87185,14.28325) resolves onto the directed
 The deterministic tests cover raw endpoint reversal, both directions, full connection crossings, departure already on A56 between schematic points 2 and 3 (the old coarse interval missed this), unaffected 3-to-4 and 5-to-10 trips, invalid coordinates, an A1-only crossing, reverse travel, an overpass and future closure timing. A1-only MapKit responses are included as real public fixtures.
 
 `ROUTING_READY` - final sources and all 70 tests verified. No further source edits in progress.
+
+## Integrazione UI centrale conclusa
+
+La mappa usa la geometria fisica risolta e le schede mostrano i capi pubblicati. La chiusura del collegamento A1 è valutata anche sulle alternative con uso A56 incerto o assente; tali alternative non vengono raccomandate come libere. Tre prove UI mirate, la prova supplementare della categoria senza A56 e i quattro smoke test sono passati: [evidenze e limiti MapKit](final-integration-ui.md).

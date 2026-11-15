@@ -1,5 +1,6 @@
 # Verifica widget A56
 
+> Report delle prove iniziali. La successiva sincronizzazione App Group sostituisce la cache privata descritta qui: vedere [architettura e verifiche finali](widget-sync-fix.md). Le prove di layout e autonomia riportate sotto restano distinte dalla nuova prova di condivisione.
 Verifica del 15 novembre 2026. Ambito sorgenti: solo `A56Widget/A56Widget.swift`; nessuna modifica al progetto, al modello/store condiviso o ai test esistenti. Nessun commit, push o upload.
 
 ## Modifiche

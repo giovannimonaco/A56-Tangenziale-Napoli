@@ -117,6 +117,8 @@ final class ClosuresViewModel {
     private let archive: ClosureArchive
     private let clock: () -> Date
     private var lastAttemptAt: Date?
+    /// Orders app/widget snapshots by request start when responses overlap.
+    var lastRequestStartedAt: Date? { lastAttemptAt }
 
     private(set) var closures: [RoadClosure] = []
     /// Rolling ~10-day archive, for the history screen and the offline fallback.

@@ -7,7 +7,7 @@ struct A56WidgetEntry: TimelineEntry {
     var isPreview = false
 
     /// Synthetic notices are used only by WidgetKit's gallery preview.
-    /// The production snapshot and timeline always read the independent store.
+    /// The production snapshot and timeline always read the shared store.
     static func preview(at date: Date = .now) -> A56WidgetEntry {
         let closures = [
             RoadClosure(
@@ -47,7 +47,7 @@ struct A56TimelineProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<A56WidgetEntry>) -> Void) {
         Task {
-            let snapshot = await WidgetSnapshotStore.shared.refresh()
+            let snapshot = await WidgetSnapshotStore.shared.snapshotForTimeline()
             let now = Date()
             let entries = snapshot.timelineDates(from: now).map {
                 A56WidgetEntry(date: $0, snapshot: snapshot)

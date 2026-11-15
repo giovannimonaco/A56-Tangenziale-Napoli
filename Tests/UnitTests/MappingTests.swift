@@ -91,6 +91,11 @@ struct MappingTests {
         #expect(AutostradeClosureMapper.sanitizedDate(value) == nil)
     }
 
+    @Test(arguments: [Double.nan, Double.infinity, -Double.infinity])
+    func `Nonfinite dates never depend on Foundation comparison behavior`(_ value: Double) {
+        #expect(!AutostradeClosureMapper.isPlausibleDate(Date(timeIntervalSince1970: value)))
+    }
+
     @Test func `Expired windows and unrelated roads are excluded`() throws {
         let expired = try Fixture.event([
             "d_sta": Fixture.now.addingTimeInterval(-600).timeIntervalSince1970 * 1000,

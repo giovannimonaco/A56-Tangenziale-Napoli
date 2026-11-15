@@ -380,12 +380,13 @@ nonisolated enum AutostradeClosureMapper {
     /// Accepts epoch-millisecond values only within a plausible range for a
     /// traffic notice (2020 through two years from now).
     static func sanitizedDate(_ milliseconds: Double?) -> Date? {
-        guard let milliseconds else { return nil }
+        guard let milliseconds, milliseconds.isFinite else { return nil }
         let date = Date(timeIntervalSince1970: milliseconds / 1000)
         return isPlausibleDate(date) ? date : nil
     }
 
     static func isPlausibleDate(_ date: Date) -> Bool {
+        guard date.timeIntervalSince1970.isFinite else { return false }
         let lowerBound = Date(timeIntervalSince1970: 1_577_836_800)   // 2020-01-01
         let upperBound = Date.now.addingTimeInterval(2 * 365 * 24 * 3600)
         return date >= lowerBound && date <= upperBound

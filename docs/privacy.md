@@ -16,7 +16,7 @@ L’app mantiene ricerche e itinerari in memoria durante l’uso e non ne salva 
 
 Per aggiornare gli avvisi, il dispositivo si collega direttamente ai feed di Autostrade per l’Italia. L’app non invia al fornitore la tua posizione, le ricerche o gli itinerari. Il fornitore può ricevere le normali informazioni di connessione, come l’indirizzo IP. Consulta la sua [informativa privacy](https://www.autostrade.it/it/privacy/sito-web).
 
-Se aggiungi un widget, anche il widget può collegarsi al fornitore degli avvisi quando iOS gli consente di aggiornarsi, senza aprire l’app. Il widget non usa la tua posizione, gli indirizzi cercati o i preferiti e conserva una propria copia locale degli avvisi. La cancellazione dell’archivio nell’app non cancella questa copia separata.
+Se aggiungi un widget, anche il widget può collegarsi al fornitore degli avvisi quando iOS gli consente di aggiornarsi, senza aprire l’app. Il widget non usa la tua posizione, gli indirizzi cercati o i preferiti. App e widget condividono sullo stesso dispositivo una copia degli avvisi ancora attivi o futuri al momento dell’aggiornamento: quando l’app scarica nuovi dati li rende disponibili anche al widget. Lo storico completo resta nell’archivio dell’app. La cancellazione di tale archivio non elimina la copia corrente condivisa; le voci terminate vengono rimosse dalla copia durante i successivi aggiornamenti.
 
 ## Dati conservati sul dispositivo
 

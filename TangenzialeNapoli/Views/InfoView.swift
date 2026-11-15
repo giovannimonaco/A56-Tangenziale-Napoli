@@ -110,7 +110,8 @@ struct InfoView: View {
         Section("Widget nella schermata Home") {
             Text("Apri la galleria dei widget dalla schermata Home, cerca «A56 Napoli» e aggiungi «Chiusure A56».")
             Text(
-                "Il widget scarica gli avvisi anche senza aprire l’app. iOS decide quando aggiornarlo: "
+                "Quando aggiorni gli avvisi nell’app, li rendi disponibili anche al widget. "
+                + "Il widget li scarica anche senza aprire l’app. iOS decide quando mostrarli: "
                 + "controlla sempre l’ora dei dati mostrata nel widget."
             )
             .font(.footnote)
@@ -215,8 +216,9 @@ struct InfoView: View {
                     + "di aggiornarsi, senza aprire l’app. Non usa la tua posizione, le ricerche o i preferiti."
                 )
                 Text(
-                    "Conserva una copia separata degli avvisi sul dispositivo. «Elimina archivio locale» "
-                    + "nell’app non cancella questa copia. Per rimuovere i dati locali dell’app e del widget, "
+                    "L’app e il widget condividono sul dispositivo gli ultimi avvisi attivi e futuri. "
+                    + "«Elimina archivio locale» cancella lo storico dell’app, ma non questa copia corrente. "
+                    + "Per rimuovere i dati locali dell’app e del widget, "
                     + "elimina l’app dalle impostazioni di iOS: rimuovere solo l’icona dalla Home non basta."
                 )
             }
