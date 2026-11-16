@@ -1,6 +1,6 @@
 # A56 Napoli — stato della preparazione App Store
 
-Aggiornamento della chat centrale: **15 novembre 2026**. App solo iPhone, iOS 18+, versione **1.0 (8)**, bundle `com.giovannimonaco.TangenzialeNapoli`. La preparazione tecnica è avanzata; **la nuova build non è stata caricata né inviata alla revisione**. La decisione sulla distribuzione resta legata alle condizioni di riuso della fonte.
+Aggiornamento: **16 novembre 2026**. App solo iPhone, iOS 18+, versione **1.0 (9)**, bundle `com.giovannimonaco.TangenzialeNapoli`. La build 9 è stata caricata, elaborata e distribuita su richiesta ai gruppi TestFlight **Personal** ed **External**, stato **`IN_BETA_TESTING`**. [Report del rilascio e verifiche](testflight-9.md). La versione App Store resta `PREPARE_FOR_SUBMISSION`; le evidenze della preparazione precedente e i punti per la pubblicazione Store sono riportati sotto.
 
 ## Completato e verificato
 
@@ -31,7 +31,7 @@ La prima CI remota ha passato la UI e trovato una differenza di Foundation nella
 1. **Condizioni di riuso dei dati:** non è stata acquisita un'autorizzazione né identificata una licenza applicabile. Non è neppure stato dimostrato un divieto specifico. Il disclaimer non documenta il permesso che Apple può richiedere. [Valutazione con fonti](publication-assessment.md), [richiesta pronta e non inviata](feed-permission-request.txt). Nessun contatto a terzi effettuato.
 2. **Dichiarazioni finali App Privacy e Content Rights:** completare sulla fonte effettivamente concordata e senza attestare diritti non documentati. Il manifest descrive le pratiche dell'app, non sostituisce le risposte Store. [Audit privacy](privacy-audit.md).
 3. **Prezzo, territori e conformità account/DSA:** non sono stati scelti o dichiarati automaticamente sulla base delle altre app; vanno allineati al modello di distribuzione e alle condizioni della fonte.
-4. **Upload del nuovo binario, elaborazione e selezione:** la convalida del pacchetto con Apple `altool --validate-app` è **VERIFY SUCCEEDED, senza errori**. Non equivale al caricamento/elaborazione della build o all’approvazione App Review. Nessun nuovo binario è stato caricato; le build 1–6 già presenti precedono questo lavoro.
+4. **TestFlight completato; selezione per App Store separata:** build **1.0 (9)** caricata ed elaborata senza errori o warning, stato `VALID`, assegnata a Personal ed External con stato esterno `IN_BETA_TESTING`. La selezione della build per la versione App Store e la revisione per la pubblicazione non sono state eseguite. [Report](testflight-9.md).
 5. **Limiti delle prove:** test locali su simulatore iOS 27.2 e remoti su iOS 26.5; non eseguito runtime iOS 18. Due tentativi UI sul telefono si sono fermati prima dei test, durante l'abilitazione dell'automazione. Restano verifica su iOS 18, ridisegno del widget su telefono e ascolto umano VoiceOver; non dichiarare certificazioni globali di accessibilità.
 
 ## Materiali
